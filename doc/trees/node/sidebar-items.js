@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Node","Composed of `data` and a list of its child `Node`s. Size infomation tracked."]]});

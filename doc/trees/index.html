@@ -1,0 +1,86 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="General purpose tree library. See the trees book for more."><meta name="keywords" content="rust, rustlang, rust-lang, trees"><title>trees - Rust</title><link rel="stylesheet" type="text/css" href="../normalize.css"><link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../ayu.css" disabled ><script id="default-settings"></script><script src="../storage.js"></script><script src="../crates.js"></script><noscript><link rel="stylesheet" href="../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="alternate icon" type="image/png" href="../favicon-16x16.png">
+<link rel="alternate icon" type="image/png" href="../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../down-arrow.svg");}</style></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../trees/index.html'><div class='logo-container rust-logo'><img src='../rust-logo.png' alt='logo'></div></a><p class="location">Crate trees</p><div class="block version"><p>Version 0.4.2</p></div><div class="sidebar-elems"><a id="all-types" href="all.html"><p>See all trees's items</p></a><div class="block items"><ul><li><a href="#reexports">Re-exports</a></li><li><a href="#modules">Modules</a></li></ul></div><p class="location"></p><div id="sidebar-vars" data-name="trees" data-ty="mod" data-relpath="../"></div><script defer src="../sidebar-items.js"></script></div></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu"><img src="../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" class="help-button">?</button>
+                <a id="settings-menu" href="../settings.html"><img src="../wheel.svg" width="18" height="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><h1 class="fqn"><span class="in-band">Crate <a class="mod" href="">trees</a><button id="copy-path" onclick="copy_path(this)">⎘</button></span><span class="out-of-band"><span id="render-detail"><a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span><a class="srclink" href="../src/trees/lib.rs.html#10-173" title="goto source code">[src]</a></span></h1><div class="docblock"><p>General purpose tree library.
+See the <a href="https://oooutlk.github.io/trees/">trees book</a> for more.</p>
+<h1 id="examples" class="section-header"><a href="#examples">Examples</a></h1>
+<p>The code below construct the following tree in different ways:</p>
+<pre><code class="language-text">.............
+.     0     .
+.   /   \   .
+.  1     4  .
+. / \   / \ .
+.2   3 5   6.
+.............
+</code></pre>
+<h2 id="example-of-tr-notations-for-building-trees" class="section-header"><a href="#example-of-tr-notations-for-building-trees">Example of <code>tr</code> notations for building trees</a></h2>
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">trees::tr</span>;
+
+<span class="kw">let</span> <span class="ident">tree</span> <span class="op">=</span> <span class="ident">tr</span>(<span class="number">0</span>) <span class="op">/</span>( <span class="ident">tr</span>(<span class="number">1</span>)<span class="op">/</span><span class="ident">tr</span>(<span class="number">2</span>)<span class="op">/</span><span class="ident">tr</span>(<span class="number">3</span>) ) <span class="op">/</span>( <span class="ident">tr</span>(<span class="number">4</span>)<span class="op">/</span><span class="ident">tr</span>(<span class="number">5</span>)<span class="op">/</span><span class="ident">tr</span>(<span class="number">6</span>) );</pre></div>
+<h2 id="example-of-tuple-notations-for-building-trees" class="section-header"><a href="#example-of-tuple-notations-for-building-trees">Example of tuple notations for building trees</a></h2>
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">let</span> <span class="ident">tree</span> <span class="op">=</span> <span class="ident">trees::Tree</span>::<span class="op">&lt;</span><span class="ident">i32</span><span class="op">&gt;</span><span class="ident">::from_tuple</span>(( <span class="number">0</span>, (<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>), (<span class="number">4</span>,<span class="number">5</span>,<span class="number">6</span>) ));</pre></div>
+<h2 id="example-of-building-trees-step-by-step" class="section-header"><a href="#example-of-building-trees-step-by-step">Example of building trees step by step</a></h2>
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">trees::Tree</span>;
+
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">tree</span> <span class="op">=</span> <span class="ident">Tree::new</span>(<span class="number">0</span>);
+
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">root</span> <span class="op">=</span> <span class="ident">tree</span>.<span class="ident">root_mut</span>();
+<span class="ident">root</span>.<span class="ident">push_back</span>( <span class="ident">Tree::new</span>(<span class="number">1</span>) );
+<span class="ident">root</span>.<span class="ident">push_back</span>( <span class="ident">Tree::new</span>(<span class="number">4</span>) );
+
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">children</span> <span class="op">=</span> <span class="ident">root</span>.<span class="ident">iter_mut</span>();
+
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">node_1</span> <span class="op">=</span> <span class="ident">children</span>.<span class="ident">next</span>().<span class="ident">unwrap</span>();
+<span class="ident">node_1</span>.<span class="ident">push_back</span>( <span class="ident">Tree::new</span>(<span class="number">2</span>) );
+<span class="ident">node_1</span>.<span class="ident">push_back</span>( <span class="ident">Tree::new</span>(<span class="number">3</span>) );
+
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">node_4</span> <span class="op">=</span> <span class="ident">children</span>.<span class="ident">next</span>().<span class="ident">unwrap</span>();
+<span class="ident">node_4</span>.<span class="ident">push_back</span>( <span class="ident">Tree::new</span>(<span class="number">5</span>) );
+<span class="ident">node_4</span>.<span class="ident">push_back</span>( <span class="ident">Tree::new</span>(<span class="number">6</span>) );</pre></div>
+<h1 id="overview-of-features" class="section-header"><a href="#overview-of-features">Overview of features</a></h1>
+<ol>
+<li>
+<p>Step-by-step <a href="./crud.md">creating, reading, updating, deleting</a> and iterating
+nodes with assocated data items.</p>
+</li>
+<li>
+<p>Compact notations to express trees: <code>-</code>,<code>/</code> encoded or tuple encoded trees.</p>
+</li>
+<li>
+<p>Depth first search cursor.</p>
+</li>
+<li>
+<p>Breadth first search iterators.</p>
+</li>
+<li>
+<p>Trees can be built by stages, with nodes stored scatteredly among memory.</p>
+</li>
+<li>
+<p>Trees can be built once through, with nodes stored contiguously.</p>
+</li>
+<li>
+<p>Support exclusive ownership with static borrow check.</p>
+</li>
+<li>
+<p>Support shared ownership with dynamic borrow check.</p>
+</li>
+</ol>
+</div><h2 id="reexports" class="section-header"><a href="#reexports">Re-exports</a></h2>
+<table><tr class="import-item"><td><code>pub use tuple::<a class="trait" href="tuple/trait.TupleForest.html" title="trait trees::tuple::TupleForest">TupleForest</a>;</code></td><td class="docblock-short"></td></tr><tr class="import-item"><td><code>pub use tuple::<a class="trait" href="tuple/trait.TupleTree.html" title="trait trees::tuple::TupleTree">TupleTree</a>;</code></td><td class="docblock-short"></td></tr><tr class="import-item"><td><code>pub use size::<a class="struct" href="size/struct.Size.html" title="struct trees::size::Size">Size</a>;</code></td><td class="docblock-short"></td></tr><tr class="import-item"><td><code>pub use tree::<a class="struct" href="tree/struct.Tree.html" title="struct trees::tree::Tree">Tree</a>;</code></td><td class="docblock-short"></td></tr><tr class="import-item"><td><code>pub use forest::<a class="struct" href="forest/struct.Forest.html" title="struct trees::forest::Forest">Forest</a>;</code></td><td class="docblock-short"></td></tr><tr class="import-item"><td><code>pub use node::<a class="struct" href="node/struct.Node.html" title="struct trees::node::Node">Node</a>;</code></td><td class="docblock-short"></td></tr><tr class="import-item"><td><code>pub use iter::<a class="struct" href="iter/struct.Iter.html" title="struct trees::iter::Iter">Iter</a>;</code></td><td class="docblock-short"></td></tr><tr class="import-item"><td><code>pub use iter::<a class="struct" href="iter/struct.IterMut.html" title="struct trees::iter::IterMut">IterMut</a>;</code></td><td class="docblock-short"></td></tr><tr class="import-item"><td><code>pub use into_iter::<a class="struct" href="into_iter/struct.IntoIter.html" title="struct trees::into_iter::IntoIter">IntoIter</a>;</code></td><td class="docblock-short"></td></tr><tr class="import-item"><td><code>pub use walk::<a class="struct" href="walk/struct.TreeWalk.html" title="struct trees::walk::TreeWalk">TreeWalk</a>;</code></td><td class="docblock-short"></td></tr><tr class="import-item"><td><code>pub use walk::<a class="struct" href="walk/struct.ForestWalk.html" title="struct trees::walk::ForestWalk">ForestWalk</a>;</code></td><td class="docblock-short"></td></tr><tr class="import-item"><td><code>pub use notation::<a class="fn" href="notation/fn.tr.html" title="fn trees::notation::tr">tr</a>;</code></td><td class="docblock-short"></td></tr><tr class="import-item"><td><code>pub use notation::<a class="fn" href="notation/fn.fr.html" title="fn trees::notation::fr">fr</a>;</code></td><td class="docblock-short"></td></tr><tr class="import-item"><td><code>pub use iter_rc::<a class="struct" href="iter_rc/struct.IterRc.html" title="struct trees::iter_rc::IterRc">IterRc</a>;</code></td><td class="docblock-short"></td></tr><tr class="import-item"><td><code>pub use rc::<a class="enum" href="rc/enum.RcNode.html" title="enum trees::rc::RcNode">RcNode</a>;</code></td><td class="docblock-short"></td></tr><tr class="import-item"><td><code>pub use rc::<a class="enum" href="rc/enum.WeakNode.html" title="enum trees::rc::WeakNode">WeakNode</a>;</code></td><td class="docblock-short"></td></tr></table><h2 id="modules" class="section-header"><a href="#modules">Modules</a></h2>
+<table><tr class="module-item"><td><a class="mod" href="bfs/index.html" title="trees::bfs mod">bfs</a></td><td class="docblock-short"><p>Breadth first search.</p>
+</td></tr><tr class="module-item"><td><a class="mod" href="forest/index.html" title="trees::forest mod">forest</a></td><td class="docblock-short"><p>Composed of a list of <code>Node</code>s as its children.</p>
+</td></tr><tr class="module-item"><td><a class="mod" href="into_iter/index.html" title="trees::into_iter mod">into_iter</a></td><td class="docblock-short"><p>Forest’s owning iterator.</p>
+</td></tr><tr class="module-item"><td><a class="mod" href="iter/index.html" title="trees::iter mod">iter</a></td><td class="docblock-short"><p>Iterators of <code>Tree</code>/<code>Forest</code>, returned by <code>iter()</code> or <code>iter_mut()</code>.</p>
+</td></tr><tr class="module-item"><td><a class="mod" href="iter_rc/index.html" title="trees::iter_rc mod">iter_rc</a></td><td class="docblock-short"><p>Iterators of <code>RcNode</code>, returned by <code>iter_rc()</code>.</p>
+</td></tr><tr class="module-item"><td><a class="mod" href="node/index.html" title="trees::node mod">node</a></td><td class="docblock-short"><p>Composed of <code>data</code> and a list of its child <code>Node</code>s.</p>
+</td></tr><tr class="module-item"><td><a class="mod" href="notation/index.html" title="trees::notation mod">notation</a></td><td class="docblock-short"><p>Operator overloading of <code>-</code> and <code>/</code> for constructing tree expression.</p>
+</td></tr><tr class="module-item"><td><a class="mod" href="rc/index.html" title="trees::rc mod">rc</a></td><td class="docblock-short"><p>Reference-counting nodes.</p>
+</td></tr><tr class="module-item"><td><a class="mod" href="size/index.html" title="trees::size mod">size</a></td><td class="docblock-short"><p>size of a tree/forest/node, including degree and descendant node count</p>
+</td></tr><tr class="module-item"><td><a class="mod" href="tree/index.html" title="trees::tree mod">tree</a></td><td class="docblock-short"><p>Composed of a root <code>Node</code> and a list of its child <code>Node</code>s.</p>
+</td></tr><tr class="module-item"><td><a class="mod" href="tuple/index.html" title="trees::tuple mod">tuple</a></td><td class="docblock-short"><p>Traits for implementing tuple notations</p>
+</td></tr><tr class="module-item"><td><a class="mod" href="walk/index.html" title="trees::walk mod">walk</a></td><td class="docblock-short"><p>Depth first search in <code>Tree</code>/<code>Node</code>/<code>Forest</code>.</p>
+</td></tr></table></section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../" data-current-crate="trees" data-search-index-js="../search-index.js" data-search-js="../search.js"></div>
+    <script src="../main.js"></script></body></html>

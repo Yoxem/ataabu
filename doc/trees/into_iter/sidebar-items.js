@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["IntoIter","Forest’s owning iterator."]]});

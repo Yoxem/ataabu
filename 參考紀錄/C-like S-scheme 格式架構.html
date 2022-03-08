@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet href="treestyles.css" type="text/css"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><!--This file has been created with toxhtml.xsl--><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>C-like S-scheme 格式架構</title><link rel="stylesheet" href="C-like%20S-scheme%20格式架構.html_files/treestyles.css" type="text/css" /><script type="text/javascript" src="C-like%20S-scheme%20格式架構.html_files/marktree.js"> 
+	</script></head><body><div class="basetop"><a href="#" onclick="expandAll(document.getElementById('base'))">Expand</a> -
+<a href="#" onclick="collapseAll(document.getElementById('base'))">Collapse</a></div><div id="base" class="basetext"><ul>
+	<li class="col" id="FMID_138403276FM"><div class="nodecontent" style="color:#000000;font-size:167%;">C-like S-scheme 格式架構</div>
+		<ul class="subexp">
+	<li class="col" id="FMID_1011146748FM"><div class="nodecontent" style="color:#000000;font-size:167%;">define</div>
+		<ul class="subexp">
+	<li class="col" id="FMID_1764687484FM"><div class="nodecontent" style="color:#000000;font-size:167%;">var</div>
+		<ul class="subexp">
+	<li class="basic" id="FMID_331142700FM"><div class="nodecontent" style="color:#000000;font-size:167%;">[_a-zA-Z][_a-zA-Z0-9]*</div></li></ul></li>
+	<li class="basic" id="FMID_1905159774FM"><div class="nodecontent" style="color:#000000;font-size:167%;">(def type x expr)</div></li></ul></li>
+	<li class="basic" id="FMID_1247879745FM"><div class="nodecontent" style="color:#000000;font-size:167%;">(ptr x) = *x</div></li>
+	<li class="col" id="FMID_1950905305FM"><div class="nodecontent" style="color:#000000;font-size:167%;">常數</div>
+		<ul class="subexp">
+	<li class="basic" id="FMID_1424467587FM"><div class="nodecontent" style="color:#000000;font-size:167%;">flo = [0-9]*[.][0-9]+</div></li>
+	<li class="basic" id="FMID_599283561FM"><div class="nodecontent" style="color:#000000;font-size:167%;">int = \d+</div></li></ul></li>
+	<li class="col" id="FMID_1570552113FM"><div class="nodecontent" style="color:#000000;font-size:167%;">控制流程</div>
+		<ul class="subexp">
+	<li class="basic" id="FMID_1727568256FM"><div class="nodecontent" style="color:#000000;font-size:167%;">(if expr then-body else-body)</div></li>
+	<li class="basic" id="FMID_727199470FM"><div class="nodecontent" style="color:#000000;font-size:167%;">(while expr body)</div></li></ul></li>
+	<li class="exp" id="FMID_1879639242FM"><div class="nodecontent" style="color:#000000;font-size:167%;">註解</div>
+		<ul class="sub">
+	<li class="basic" id="FMID_1205519348FM"><div class="nodecontent" style="color:#000000;font-size:167%;">(comment str)</div></li></ul></li>
+	<li class="col" id="FMID_983390839FM"><div class="nodecontent" style="color:#000000;font-size:167%;">basic_opetation</div>
+		<ul class="subexp">
+	<li class="basic" id="FMID_1140734087FM"><div class="nodecontent" style="color:#000000;font-size:167%;">+ - * / %</div></li>
+	<li class="basic" id="FMID_1841907354FM"><div class="nodecontent" style="color:#000000;font-size:167%;">(quotient x y)</div></li>
+	<li class="basic" id="FMID_767117970FM"><div class="nodecontent" style="color:#000000;font-size:167%;">(array-ref x y_int) = x[y_int]</div></li>
+	<li class="basic" id="FMID_899316162FM"><div class="nodecontent" style="color:#000000;font-size:167%;">(struct-ref x y_str) = x.y_str</div></li>
+	<li class="basic" id="FMID_641035715FM"><div class="nodecontent" style="color:#000000;font-size:167%;">fun(x)  = (fun x)</div></li></ul></li>
+	<li class="col" id="FMID_1235418862FM"><div class="nodecontent" style="color:#000000;font-size:167%;">型別</div>
+		<ul class="subexp">
+	<li class="basic" id="FMID_284491944FM"><div class="nodecontent" style="color:#000000;font-size:167%;">常數型別</div> <a onclick="getVisibleParents('FMID_1950905305FM')" href="#FMID_1950905305FM"><img src="C-like%20S-scheme%20格式架構.html_files/ilink.png" class="ilink" alt="Connector" /></a></li>
+	<li class="col" id="FMID_826029005FM"><div class="nodecontent" style="color:#000000;font-size:167%;">union</div>
+		<ul class="subexp">
+	<li class="basic" id="FMID_1042572146FM"><div class="nodecontent" style="color:#000000;font-size:167%;">(union type_name [(type_i attr_i)+]</div></li></ul></li>
+	<li class="col" id="FMID_1621952903FM"><div class="nodecontent" style="color:#000000;font-size:167%;">struct</div>
+		<ul class="subexp">
+	<li class="basic" id="FMID_1833291570FM"><div class="nodecontent" style="color:#000000;font-size:167%;">(struct type_name [(type_i attr_i)+]</div></li></ul></li>
+	<li class="col" id="FMID_1581329535FM"><div class="nodecontent" style="color:#000000;font-size:167%;">自定型別</div>
+		<ul class="subexp">
+	<li class="basic" id="FMID_512893807FM"><div class="nodecontent" style="color:#000000;font-size:167%;">typedef x y</div></li></ul></li>
+	<li class="basic" id="FMID_321651751FM"><div class="nodecontent" style="color:#000000;font-size:167%;">void</div></li></ul></li>
+	<li class="basic" id="FMID_698631945FM"><div class="nodecontent" style="color:#000000;font-size:167%;">(set! var expr)</div></li>
+	<li class="col" id="FMID_1286841113FM"><div class="nodecontent" style="color:#000000;font-size:167%;">函數定義</div>
+		<ul class="subexp">
+	<li class="basic" id="FMID_1771762589FM"><div class="nodecontent" style="color:#000000;font-size:167%;">(def_func func_name [(input_type_i input_vari)* output_type ] expr+]</div></li>
+	<li class="basic" id="FMID_886838030FM"><div class="nodecontent" style="color:#000000;font-size:167%;">(return x)</div></li></ul></li></ul></li></ul></div></body></html>
