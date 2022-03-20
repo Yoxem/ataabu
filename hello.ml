@@ -1,6 +1,6 @@
 open Uchar;;
 open StringLabels;;
-
+(* TODO: Add parsing attribute and operator + - * / \n \r # = == < > ; ( ) [ ]*)
 
 type parseoutput =
     | Fail
