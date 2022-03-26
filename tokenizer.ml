@@ -1,15 +1,29 @@
 open Uchar;;
+open List;;
 open StringLabels;;
+open Printf;;
 (* TODO: Add parsing attribute and operator + - * / \n \r # = == < > ; ( ) [ ]*)
 
-type parseoutput =
+type tokenizeroutput =
     | Fail
     | Success of string * string;;
 
+type token = Token of string * string;;
+
+type aux_middle = Aux of tokenizeroutput * string
+
+
 exception IndexException of string
 
+let token_to_string token =  match token with
+| Token (str, token_type) -> "Token(" ^ str ^ ", " ^ token_type ^")\n";;
+
+
+let print_token token =  print_string (token_to_string token);;
+
+
 let print_parse_output output =  match output with
-    | Success (car, cdr) -> print_string ("Success(" ^ car ^ " " ^ cdr ^")\n")
+    | Success (car, cdr) -> print_string ("Success(" ^ car ^ ", " ^ cdr ^")\n")
     | Fail -> print_string ("Fail!\n");;
   
 
@@ -55,7 +69,7 @@ let  (>>=) input parser =
             let fst_snd = fst ^ snd in
             Success (fst_snd, rest);;
 
-let ( >>=* ) (input : parseoutput) parser = 
+let ( >>=* ) (input : tokenizeroutput) parser = 
   if input == Fail then
     Fail
   else
@@ -81,7 +95,7 @@ let not_match_char pattern =
           then Success (fst, rest)
           else Fail;;
 
-let ( >>=? ) (input : parseoutput) parser = 
+let ( >>=? ) (input : tokenizeroutput) parser = 
   let middle = input >>= parser in
     match middle with
       | Fail -> input
@@ -97,6 +111,16 @@ let ( || ) parser1  parser2 =
             match middle2 with 
               | Fail -> Fail
               | Success (_ , _) -> middle2;;
+
+
+let ( ||** ) parser1  parser2 = 
+  fun input ->
+    let middle1 = parser1 input in
+      match middle1 with
+        | Aux (Success (_ , _), _) -> middle1
+        | Aux(Fail, _) ->
+          let middle2 = parser2 input in
+            middle2;;
 
 
 
@@ -136,11 +160,69 @@ let parse_string input = (input
                         >>=* (inside_quote_mark)
                         >>= (match_char "\"")  ;;
 
+let parse_operator input = input >>= ((match_char "+") || (match_char "-") || (match_char "*") || (match_char "/") || (match_char "%"));;
+
+let parse_number_mark input = input >>= (match_char "#");;
+
+let parse_equal input = input >>= (match_char "==");;
+
+let parse_assign input = input >>= (match_char "=");;
+
+let parse_semicolon input = input >>= (match_char ";");;
+
+let parse_parenthesis input = input >>= ((match_char "(")|| (match_char ")"));;
+
+let parse_bracket input = input >>= ((match_char "[")|| (match_char "]"));;
+
+let parse_brace input = input >>= ((match_char "{")|| (match_char "}"));;
+
+let parse_newline input = input >>= (match_char "\n");;
+
+let parse_spaces input = input >>= (match_char " ") >>=* (match_char " ");;
+
+
+
+
+
+
+
 let parse_id input = (input 
           >>= ((match_char "_") || (match_range "a" "z") ||(match_range "A" "Z"))
           >>=* ((match_char "_") || (match_range "0" "9") || (match_range "a" "z") ||(match_range "A" "Z")));;
 
+let rec total_parser_aux input list = 
+  match input with
+   | Success(_,"") -> list
+   | _ -> 
+    let initial = ((fun i -> Aux ((parse_id i), "ID"))
+                ||** (fun i -> Aux ((parse_operator i) ,"OP"))
+                ||** (fun i -> Aux ((parse_int i) ,"INT"))
+                ||** (fun i -> Aux ((parse_float i) ,"FLO"))
+                ||** (fun i -> Aux ((parse_number_mark i) ,"NUM_MRK"))
+                ||** (fun i -> Aux ((parse_brace i) ,"BRACE"))
+                ||** (fun i -> Aux ((parse_assign i), "ASSIGN"))
+                ||** (fun i -> Aux ((parse_bracket i) ,"BRACK"))
+                ||** (fun i -> Aux ((parse_parenthesis i) ,"PAREN"))
+                ||** (fun i -> Aux ((parse_semicolon i), "SEMICO"))
+                ||** (fun i -> Aux ((parse_newline i), "NL"))
+                ||** (fun i -> Aux ((parse_spaces i) ,"SPACE")))
+                 input in
+    match initial with
+      | Aux (Fail, _) -> let _ =  print_string "Error" in []
+      | Aux (Success(matched, remained), token_type) -> total_parser_aux (Success("", remained)) (append list [Token(matched, token_type );]);;
 
+
+let rec total_parser input = total_parser_aux (Success("", input)) [];;
+
+
+
+
+(* tests
+
+List.iter (print_token) (total_parser "lambda(x){let a = 2;
+
+return a + x;};");;
+List.iter (print_token) (total_parser "12+中34;");;
 
 print_parse_output (parse_id (Success ("", "_")));;
 print_parse_output (parse_id (Success ("", "_abc12c")));;
@@ -194,3 +276,5 @@ print_parse_output (parse_string (Success ("","\"123\"")));;
 print_parse_output (parse_string (Success ("","\"12\\\"3\"")));;
 print_parse_output (parse_string (Success ("","\"\\\"\\\"\"")));;
 print_parse_output (parse_string (Success ("","\"\"")));;
+
+*)

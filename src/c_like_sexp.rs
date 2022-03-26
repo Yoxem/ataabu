@@ -269,29 +269,10 @@ fn convert_c_sexp_to_c(sexp_tree : & trees::Node<&str>) -> String{
 
 
 
-pub fn main() -> std::io::Result<()>{
-
-    let mut c_like_expr_trees = tr("STMTS")/(tr("INCL") /tr("stdio.h"))/(tr("EXEC")/(tr("printf") -tr("\"strng=%s\"") -tr("strng")))/(tr("DEF")/tr("int")/tr("a")/(tr("OP")/tr("+")/(tr("OP")/tr("*")/tr("2")/tr("3"))/tr("8")));
-
-    println!("{:?}", c_like_expr_trees.to_string());
-
-
-    let res_str =  convert_c_sexp_to_c(c_like_expr_trees.root());
-
-
-    let mut file = File::create("/tmp/foo.txt")?;
-    file.write_all(res_str.as_bytes())?;
-    Ok(())
-
-
-}
-
-
 
 
 #[cfg(test)]
 mod tests {
-    // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
 
     #[test]
