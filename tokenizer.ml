@@ -1,7 +1,7 @@
 open Uchar;;
 open List;;
 open StringLabels;;
-open Printf;;
+
 (* TODO: Add parsing attribute and operator + - * / \n \r # = == < > ; ( ) [ ]*)
 
 type tokenizeroutput =
@@ -209,7 +209,9 @@ let rec total_parser_aux input list =
                  input in
     match initial with
       | Aux (Fail, _) -> let _ =  print_string "Error" in []
-      | Aux (Success(matched, remained), token_type) -> total_parser_aux (Success("", remained)) (append list [Token(matched, token_type );]);;
+      | Aux (Success(matched, remained), token_type) -> total_parser_aux (
+                                                            Success("", remained))
+                                                            (append list [Token(matched, token_type );]);;
 
 
 let rec total_parser input = total_parser_aux (Success("", input)) [];;
