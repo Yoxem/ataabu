@@ -16,7 +16,7 @@ type aux_middle = Aux of tokenizeroutput * string
 exception IndexException of string
 
 let token_to_string token =  match token with
-| Token (str, token_type) -> "Token(" ^ str ^ ", " ^ token_type ^")\n";;
+| Token (str, token_type) -> "Token(" ^ str ^ ", " ^ token_type ^")";;
 
 
 let print_token token =  print_string (token_to_string token);;
