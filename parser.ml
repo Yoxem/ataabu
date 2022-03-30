@@ -98,12 +98,28 @@ let (>>=) parseoutput parser_unit =
           | Item(matched_item1) -> Success (Ls(append [matched1] [matched2]), remained2)
           | ASTFail -> Fail;;
 
-let add_sub token_list =
-  let result1 = Success(Ls([]), token_list) >>= (match_token_type "INT")
-                >>= (match_token_name_type "+" "OP") >>= (match_token_type "INT") in
-    match result1 with
-    | Success(Ls(ast_list), remained_tokens) -> Success(Ls[(nth ast_list 1); (nth ast_list 0) ; (nth ast_list 2)], remained_tokens)
-    | _ -> result1;;
+let (||) parser_unit1 parser_unit2 = 
+  fun parseoutput ->
+    let middle1 = parser_unit1 parseoutput in
+    match middle1 with
+      | Success (_ , _) -> middle1
+      | Fail ->
+        let middle2 = parser_unit2 parseoutput in
+        match middle2 with 
+          | Fail -> Fail
+          | Success (_ , _) -> middle2;;
+
+
+let rec add_sub token_list =
+  let wrapper = Success(Ls([]),  token_list) in 
+    let result1 = wrapper >>= (match_token_type "INT") >>= ((match_token_name_type "+" "OP") || (match_token_name_type "-" "OP")) >>= add_sub in
+      match result1 with
+      | Success(Ls(ast_list), remained_tokens) -> Success(Ls[(nth ast_list 1); (nth ast_list 0) ; (nth ast_list 2)], remained_tokens)
+      | _ ->
+      let result2 = wrapper >>= (match_token_type "INT")  in
+        match result2 with
+        | Success(_, _) -> result2;
+        | _ -> result1;;
 
           (*   
 let add_sub token_list =
@@ -113,8 +129,27 @@ let add_sub token_list =
     | Success(Ls(ast_list), remained_tokens) -> Success(Ls[(nth ast_list 1); (nth ast_list 0) ; (nth ast_list 2)], remained_tokens)
     | _ -> result1;;*)
 
-let ex_token_list = Tokenizer.total_parser "2+3";;
+let ex_token_list = Tokenizer.total_parser "2-3";;
 
 (*  List.iter Tokenizer.print_token ex_token_list;;  *)
+
+print_parseoutput (add_sub ex_token_list);;
+print_string "\n\n";;
+
+let ex_token_list = Tokenizer.total_parser "2";;
+
+(*  List.iter Tokenizer.print_token ex_token_list;;  *)
+
+
+
+print_parseoutput (add_sub ex_token_list);;
+print_string "\n\n";;
+
+
+let ex_token_list = Tokenizer.total_parser "5+6+7";;
+
+(*  List.iter Tokenizer.print_token ex_token_list;;  *)
+
+
 
 print_parseoutput (add_sub ex_token_list);;
