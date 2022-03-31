@@ -92,6 +92,8 @@ let (>>=) parseoutput parser_unit =
     let result = parser_unit remained1 in
       match result with
       | Fail -> Fail
+      | Success (Ls([]) , remained2) ->
+        parseoutput
       | Success (matched2 , remained2) ->
         match matched1 with
           | Ls(matched_list1) -> Success (Ls(append matched_list1 [matched2]), remained2)
@@ -109,17 +111,25 @@ let (||) parser_unit1 parser_unit2 =
           | Fail -> Fail
           | Success (_ , _) -> middle2;;
 
+let rec correct_list ls = 
+  match ls with
+  | Ls([lhs; Ls(op::rhs)]) -> Ls(op::lhs::[(correct_list(Ls(rhs)))])
+  | Ls([Item(Token(id, typ))]) -> Item(Token(id, typ))
+  | _ -> ls
+
+let rec add_sub_rest token_list =
+  let wrapper = Success(Ls([]),  token_list) in 
+    let result1 = wrapper >>= ((match_token_name_type "+" "OP") || (match_token_name_type "-" "OP"))  >>= (match_token_type "INT") >>= add_sub_rest in
+      match result1 with
+      | Success(Ls(_), remained_tokens) -> result1
+      | _ -> wrapper
 
 let rec add_sub token_list =
   let wrapper = Success(Ls([]),  token_list) in 
-    let result1 = wrapper >>= (match_token_type "INT") >>= ((match_token_name_type "+" "OP") || (match_token_name_type "-" "OP")) >>= add_sub in
+    let result1 = wrapper >>= (match_token_type "INT") >>= add_sub_rest in
       match result1 with
-      | Success(Ls(ast_list), remained_tokens) -> Success(Ls[(nth ast_list 1); (nth ast_list 0) ; (nth ast_list 2)], remained_tokens)
-      | _ ->
-      let result2 = wrapper >>= (match_token_type "INT")  in
-        match result2 with
-        | Success(_, _) -> result2;
-        | _ -> result1;;
+      | Success(Ls(x), remained) -> Success((correct_list (Ls(x))), remained)
+      | _ -> result1
 
           (*   
 let add_sub token_list =
@@ -146,7 +156,7 @@ print_parseoutput (add_sub ex_token_list);;
 print_string "\n\n";;
 
 
-let ex_token_list = Tokenizer.total_parser "5+6+7";;
+let ex_token_list = Tokenizer.total_parser "5+6-7";;
 
 (*  List.iter Tokenizer.print_token ex_token_list;;  *)
 
