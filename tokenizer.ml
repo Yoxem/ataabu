@@ -16,7 +16,7 @@ type aux_middle = Aux of tokenizeroutput * string
 exception IndexException of string
 
 let token_to_string token =  match token with
-| Token (str, token_type) -> "Token(" ^ str ^ ", " ^ token_type ^")";;
+| Token (str, token_type) -> "Token(\"" ^ str ^ "\", \"" ^ token_type ^"\")";;
 
 
 let print_token token =  print_string (token_to_string token);;
@@ -156,7 +156,7 @@ let ( >> ) parser1 parser2 =
 let inside_quote_mark  = ((fun i -> Success("", i)  >>= (match_char "\\") >>= (match_char "\"")) ||  (fun i -> Success("", i)  >>= (not_match_char "\""))) ;;
 
 let parse_string input = (input 
-                         >>= (match_char "\"")) 
+                        >>= (match_char "\"")) 
                         >>=* (inside_quote_mark)
                         >>= (match_char "\"")  ;;
 
@@ -169,6 +169,8 @@ let parse_equal input = input >>= (match_char "==");;
 let parse_assign input = input >>= (match_char "=");;
 
 let parse_semicolon input = input >>= (match_char ";");;
+
+let parse_comma input = input >>= (match_char ",");;
 
 let parse_parenthesis input = input >>= ((match_char "(")|| (match_char ")"));;
 
@@ -192,21 +194,22 @@ let parse_id input = (input
 
 let rec total_parser_aux input list = 
   match input with
-   | Success(_,"") -> list
-   | _ -> 
+  | Success(_,"") -> list
+  | _ -> 
     let initial = ((fun i -> Aux ((parse_id i), "ID"))
                 ||** (fun i -> Aux ((parse_operator i) ,"OP"))
                 ||** (fun i -> Aux ((parse_int i) ,"INT"))
                 ||** (fun i -> Aux ((parse_float i) ,"FLO"))
                 ||** (fun i -> Aux ((parse_number_mark i) ,"NUM_MRK"))
                 ||** (fun i -> Aux ((parse_brace i) ,"BRACE"))
+                ||** (fun i -> Aux ((parse_comma i) ,"COMMA"))
                 ||** (fun i -> Aux ((parse_assign i), "ASSIGN"))
                 ||** (fun i -> Aux ((parse_bracket i) ,"BRACK"))
                 ||** (fun i -> Aux ((parse_parenthesis i) ,"PAREN"))
                 ||** (fun i -> Aux ((parse_semicolon i), "SEMICO"))
                 ||** (fun i -> Aux ((parse_newline i), "NL"))
                 ||** (fun i -> Aux ((parse_spaces i) ,"SPACE")))
-                 input in
+                input in
     match initial with
       | Aux (Fail, _) -> let _ =  print_string "Error" in []
       | Aux (Success(matched, remained), token_type) -> total_parser_aux (

@@ -111,25 +111,193 @@ let (||) parser_unit1 parser_unit2 =
           | Fail -> Fail
           | Success (_ , _) -> middle2;;
 
+
+
+
+
+
+
+
+
+
+let rec ( >>=* ) input parser = 
+  if input == Fail then
+    Fail
+  else
+    let middle0 = input >>= parser in
+    match middle0 with
+    | Success(Ls(_), remained_tokens) -> middle0 >>=* parser
+    | _ -> input    
+
 let rec correct_list ls = 
   match ls with
   | Ls([lhs; Ls(op::rhs)]) -> Ls(op::lhs::[(correct_list(Ls(rhs)))])
   | Ls([Item(Token(id, typ))]) -> Item(Token(id, typ))
+  | Ls([Ls(lst)]) -> (correct_list (Ls(lst)))
   | _ -> ls
 
-let rec add_sub_rest token_list =
+
+(*item2 = (expr) | int | id *) 
+let rec item2 token_list =
   let wrapper = Success(Ls([]),  token_list) in 
-    let result1 = wrapper >>= ((match_token_name_type "+" "OP") || (match_token_name_type "-" "OP"))  >>= (match_token_type "INT") >>= add_sub_rest in
+    let result1 = wrapper >>= ((fun i -> Success(Ls([]), i) >>= (match_token_name_type "(" "PAREN") >>= expr >>=(match_token_name_type ")" "PAREN"))
+                                || (match_token_type "INT")
+                                || (match_token_type "ID")) in
+      match result1 with
+      | Success(Ls([Ls([Item(Token("(", "PAREN")); x; Item(Token(")", "PAREN"))])]), remained) -> Success((correct_list x), remained)
+      | Success(ls, remained) -> Success((correct_list ls), remained)
+      | _ -> result1
+
+and args token_list = 
+  let wrapper = Success(Ls([]),  token_list) in
+  let result1 = wrapper >>= (match_token_name_type "(" "PAREN") >>=* (fun i -> Success(Ls([]), i) >>= (match_token_type "ID") >>=*(fun i -> Success(Ls([]), i) >>= (match_token_type "COMMA") >>= (match_token_type "ID"))) >>= (match_token_name_type ")" "PAREN") in
+    match result1 with
+    | Success(Ls(left_paren::Ls(other)::righ_paren), remained) ->
+                      let remove_comma = fun ls -> match ls with Ls([l; x]) -> x | _ -> ls in
+                      let other_removed_comma = List.map remove_comma other in
+                      Success(Ls(Item(Token("%args", "ID"))::other_removed_comma), remained)
+    |  Success(Ls(left_paren::righ_paren), remained) -> Success(Ls([Item(Token("%args", "ID"))]), remained)
+    | _ -> result1                  
+    (*| Success(Ls(Item(Token("(", "PAREN"))::first_args::[Item(Token(")", "PAREN"))]), y) ->
+                          Success(Ls([first_args]), y)
+    | Success(Ls(Item(Token("(", "PAREN"))::first_args::rest_lst), y) ->
+                          let lst_without_r_paren = filter (fun x ->
+                                                              match x with
+                                                              | Item(_) -> false
+                                                              | _ -> true) rest_lst in
+                          let remove_comma = fun ls -> match ls with Ls([Item(Token(",", "COMMA")); x]) -> x | _ -> ls in
+                          let lst_removed_comma = List.map remove_comma lst_without_r_paren in
+                          Success(Ls(Item(Token("%args", "ID"))::first_args::lst_removed_comma), y) *)
+    | _ -> result1  
+
+ (*factor = item2 | lambda  "(" args ")" {stmts} *) 
+and item token_list =
+  let wrapper = Success(Ls([]),  token_list) in 
+  let result1 = wrapper >>= ((fun i -> Success(Ls([]), i) >>= (match_token_name_type "lambda" "ID") >>= args
+  >>= (match_token_name_type "{" "BRACE") >>= stmts >>= (match_token_name_type "}" "BRACE"))
+                              || fun i -> Success(Ls([]), i) >>= item2) in
+    match result1 with
+    | Success(Ls([Ls(Item(Token("lambda", "ID"))::args::l_brace::[Item(Token("}", "BRACE"))])]) , remained) ->
+                                        Success(Ls([Item(Token("lambda", "ID"));args;Ls([])]), remained)
+    | Success(Ls([Ls(Item(Token("lambda", "ID"))::args::l_brace::body::r_brace)]) , remained) ->
+                                        Success(Ls([Item(Token("lambda", "ID"));args;body]), remained)
+    | _ ->  result1
+
+
+and factor_more_callees token_list = 
+  let wrapper = Success(Ls([]),  token_list) in 
+  let result1 = wrapper >>= (match_token_name_type "(" "PAREN") >>= item >>=*
+    (fun i -> Success(Ls([]), i) >>= (match_token_type "COMMA") >>= item)
+    >>=(match_token_name_type ")" "PAREN") in
+    match result1 with
+    | Success(Ls(Item(Token("(", "PAREN"))::first_callee::rest_lst), y) ->
+                          let lst_without_r_paren = filter (fun x ->
+                                                              match x with
+                                                              | Item(_) -> false
+                                                              | _ -> true) rest_lst in
+                          let remove_comma = fun ls -> match ls with Ls([Item(Token(",", "COMMA")); x]) -> x | _ -> ls in
+                          let lst_removed_comma = List.map remove_comma lst_without_r_paren in
+                          Success(Ls(Item(Token("%callee", "ID"))::first_callee::lst_removed_comma), y)
+    | _ -> result1
+
+ (*factor = item | item  "(" morecollee ")" *) 
+and factor token_list =
+  let wrapper = Success(Ls([]),  token_list) in 
+    let result1 = wrapper >>= ((fun i -> Success(Ls([]), i) >>= item >>= (match_token_name_type "(" "PAREN")  >>= (match_token_name_type ")" "PAREN"))
+                                || (fun i -> Success(Ls([]), i) >>= item >>= factor_more_callees)
+                                || item) in
+      match result1 with
+      | Success(ASTFail, _) -> result1
+      | Fail -> Fail
+      | Success(Item _, _) -> result1
+      | Success(Ls(other), remained) ->
+        let result2 = Success((correct_list (Ls(other))), remained) in
+        match result2 with
+        | Success(Ls[caller; Item(Token("(", "PAREN")); Item(Token(")", "PAREN"))], remained) ->
+          Success(Ls[Item(Token("%apply", "ID")); caller], remained)
+        | Success(Ls[caller; Item(Token("(", "PAREN")); callee ; Item(Token(")", "PAREN"))], remained) ->
+          Success(Ls[Item(Token("%apply", "ID")); caller; callee], remained)
+        | Success(Ls(Item(Token("%callee", "ID"))::op::rest), remained) -> let l1 = Item(Token("%apply", "ID"))::op::rest in
+                                                    let l2 = List.filter (fun x -> match x with Ls([]) -> false | _ -> true) l1 in
+                                                    Success(Ls(l2), remained)
+        | _ -> result2
+
+
+      (*
+(* ( */ factor) *)
+let rec factor_rest token_list =
+  let wrapper = Success(Ls([]),  token_list) in 
+    let result1 = wrapper >>= ((match_token_name_type "*" "OP") || (match_token_name_type "/" "OP"))  >>= (match_token_type "INT") >>= term_rest in
+      match result1 with
+      | Success(Ls(_), remained_tokens) -> result1
+      | _ -> wrapper *)
+
+
+
+  (* ( */ factor) *)
+and term_rest token_list =
+  let wrapper = Success(Ls([]),  token_list) in 
+    let result1 = wrapper >>= ((match_token_name_type "*" "OP") || (match_token_name_type "/" "OP"))  >>= factor >>= term_rest in
       match result1 with
       | Success(Ls(_), remained_tokens) -> result1
       | _ -> wrapper
 
-let rec add_sub token_list =
+(*term = factor ( */ factor)* *) 
+and term token_list =
   let wrapper = Success(Ls([]),  token_list) in 
-    let result1 = wrapper >>= (match_token_type "INT") >>= add_sub_rest in
+    let result1 = wrapper >>= factor >>= term_rest in
       match result1 with
       | Success(Ls(x), remained) -> Success((correct_list (Ls(x))), remained)
       | _ -> result1
+
+(* (+- term) *)
+and expr_rest token_list =
+  let wrapper = Success(Ls([]),  token_list) in 
+    let result1 = wrapper >>= ((match_token_name_type "+" "OP") || (match_token_name_type "-" "OP"))  >>= term >>= expr_rest in
+      match result1 with
+      | Success(Ls([Item(x) ; Ls(lists)]), remained_tokens) -> Success(Ls((Item(x)::lists)), remained_tokens)
+      | Success(Ls(_), remained_tokens) -> result1
+      | _ -> wrapper
+
+(*expr = term (+- term)* *) 
+and expr token_list =
+  let wrapper = Success(Ls([]),  token_list) in 
+    let result1 = wrapper >>= term >>= expr_rest in
+      match result1 with
+      | Success(Ls(x), remained) -> Success((correct_list (Ls(x))), remained)
+      | _ -> result1
+
+(* var_def = id id | expr ;*)
+and var_def token_list =
+  let wrapper = Success(Ls([]),  token_list) in 
+    let result1 = wrapper >>= (match_token_type "ID") >>=  (match_token_type "ID") >>= (match_token_type "ASSIGN") >>= expr in
+      match result1 with
+      | Success(Ls(typ::var::assign::expr), remained_tokens) -> Success(Ls(Item(Token("%def", "ID"))::typ::var::expr), remained_tokens)
+      | _ -> wrapper
+
+
+
+(* one_statement = var_def | expr ;*)
+and one_statement token_list =
+  let token_list2 = List.filter (fun x -> match x with Tokenizer.Token(_, "SPACE") -> false | Tokenizer.Token(_, "NL") -> false | _ -> true) token_list in
+  let wrapper = Success(Ls([]),  token_list2) in 
+    let result1 = wrapper >>= ((fun i -> Success(Ls([]), i) >>= expr >>= (match_token_name_type ";" "SEMICO") )||(fun i -> Success(Ls([]), i) >>= var_def >>= (match_token_name_type ";" "SEMICO")))   in
+      match result1 with
+      | Success(Ls(lst), remained_tokens) ->  let lst2 = (correct_list (Ls(lst))) in
+                                              let lst2_inner =  match lst2 with
+                                                | Ls(lst2_inner) -> lst2_inner
+                                                | _ -> [lst2] in
+                                              let lst_remove_semicolon = List.filter (fun x -> match x with Item(Token(_, "SEMICO")) -> false | _ -> true) lst2_inner in
+                                              Success((correct_list (Ls(lst_remove_semicolon))), remained_tokens)
+      | _ -> result1
+
+(* stmts = one_statement* *)
+and stmts token_list =
+let wrapper = Success(Ls([]),  token_list) in 
+  let result1 = wrapper >>=* one_statement in
+  match result1 with
+  | Success(Ls(_), remained_tokens) -> result1
+  | _ -> result1 
 
           (*   
 let add_sub token_list =
@@ -139,27 +307,54 @@ let add_sub token_list =
     | Success(Ls(ast_list), remained_tokens) -> Success(Ls[(nth ast_list 1); (nth ast_list 0) ; (nth ast_list 2)], remained_tokens)
     | _ -> result1;;*)
 
-let ex_token_list = Tokenizer.total_parser "2-3";;
+let ex_token_list = Tokenizer.total_parser "2-3;";;
 
 (*  List.iter Tokenizer.print_token ex_token_list;;  *)
 
-print_parseoutput (add_sub ex_token_list);;
+print_parseoutput (one_statement ex_token_list);;
 print_string "\n\n";;
 
-let ex_token_list = Tokenizer.total_parser "2";;
+let ex_token_list = Tokenizer.total_parser "(2);";;
 
 (*  List.iter Tokenizer.print_token ex_token_list;;  *)
 
 
 
-print_parseoutput (add_sub ex_token_list);;
+print_parseoutput (one_statement ex_token_list);;
 print_string "\n\n";;
 
 
-let ex_token_list = Tokenizer.total_parser "5+6-7";;
+let ex_token_list = Tokenizer.total_parser "7/(5+6)*7;";;
+print_parseoutput (stmts ex_token_list);;
 
-(*  List.iter Tokenizer.print_token ex_token_list;;  *)
+print_string "\n\n";;
+let ex_token_list = Tokenizer.total_parser "(7/(10-6)*a);";;
+print_parseoutput (stmts ex_token_list);;
 
+print_string "\n\n";;
+let ex_token_list = Tokenizer.total_parser "a(b);";;
+print_parseoutput (stmts ex_token_list);;
 
+print_string "\n\n";;
+let ex_token_list = Tokenizer.total_parser "a();";;
+print_parseoutput (stmts ex_token_list);;
 
-print_parseoutput (add_sub ex_token_list);;
+print_string "\n\n";;
+let ex_token_list = Tokenizer.total_parser "a(b,c,a);";;
+print_parseoutput (stmts ex_token_list);;
+
+print_string "\n\n";;
+let ex_token_list = Tokenizer.total_parser "int a = 2+3;a + b;";;
+print_parseoutput (stmts ex_token_list);;
+
+print_string "\n\n";;
+let ex_token_list = Tokenizer.total_parser "lambda(a, b){12;};";;
+print_parseoutput (stmts ex_token_list);;
+
+print_string "\n\n";;
+let ex_token_list = Tokenizer.total_parser "lambda(a){12;};";;
+print_parseoutput (stmts ex_token_list);;
+
+print_string "\n\n";;
+let ex_token_list = Tokenizer.total_parser "lambda(){};";;
+print_parseoutput (stmts ex_token_list);;
