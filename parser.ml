@@ -3,9 +3,6 @@ open StringLabels;;
 
 type token = Tokenizer.token;;
 
-let token_list = Tokenizer.total_parser "lambda(x){let a = 2;
-
-return a + x;};";;
 
 type ast_tree = 
   | ASTFail
@@ -21,17 +18,9 @@ let not_empty_token token = match token with
     | "NL" -> false
     | _ -> true;;
 
-let token_list_filtered = List.filter not_empty_token token_list
-
-
-
 type parseoutput =
   | Fail
   | Success of  ast_tree * ( token list);;
-
-
-
-
 
 let consume1token ls =
     match ls with
@@ -79,11 +68,6 @@ let rec parseoutput2string input =
 
 
 let print_parseoutput input = print_string (parseoutput2string input);; 
-
-let token_list_filtered = List.filter not_empty_token token_list;;
-
-let cosumed = (match_token_name_type "lambda" "IS")  token_list_filtered in
-  print_parseoutput cosumed;;
 
 let (>>=) parseoutput parser_unit = 
   match parseoutput with
@@ -158,17 +142,6 @@ and args token_list =
                       Success(Ls(Item(Token("%args", "ID"))::other_removed_comma), remained)
     |  Success(Ls(left_paren::righ_paren), remained) -> Success(Ls([Item(Token("%args", "ID"))]), remained)
     | _ -> result1                  
-    (*| Success(Ls(Item(Token("(", "PAREN"))::first_args::[Item(Token(")", "PAREN"))]), y) ->
-                          Success(Ls([first_args]), y)
-    | Success(Ls(Item(Token("(", "PAREN"))::first_args::rest_lst), y) ->
-                          let lst_without_r_paren = filter (fun x ->
-                                                              match x with
-                                                              | Item(_) -> false
-                                                              | _ -> true) rest_lst in
-                          let remove_comma = fun ls -> match ls with Ls([Item(Token(",", "COMMA")); x]) -> x | _ -> ls in
-                          let lst_removed_comma = List.map remove_comma lst_without_r_paren in
-                          Success(Ls(Item(Token("%args", "ID"))::first_args::lst_removed_comma), y) *)
-    | _ -> result1  
 
  (*factor = item2 | lambda  "(" args ")" {stmts} *) 
 and item token_list =
@@ -299,13 +272,7 @@ let wrapper = Success(Ls([]),  token_list) in
   | Success(Ls(_), remained_tokens) -> result1
   | _ -> result1 
 
-          (*   
-let add_sub token_list =
-  let result1 = Success(Ls([]), token_list) >>= (match_token_type "INT")
-                >>= (match_token_name_type "+" "OP") >>= (match_token_type "INT") in
-    match result1 with
-    | Success(Ls(ast_list), remained_tokens) -> Success(Ls[(nth ast_list 1); (nth ast_list 0) ; (nth ast_list 2)], remained_tokens)
-    | _ -> result1;;*)
+(*examples
 
 let ex_token_list = Tokenizer.total_parser "2-3;";;
 
@@ -358,3 +325,9 @@ print_parseoutput (stmts ex_token_list);;
 print_string "\n\n";;
 let ex_token_list = Tokenizer.total_parser "lambda(){};";;
 print_parseoutput (stmts ex_token_list);;
+
+print_string "\n\n";;
+let ex_token_list = Tokenizer.total_parser "lambda(x){x;}(12);";;
+print_parseoutput (stmts ex_token_list);;
+
+*)
