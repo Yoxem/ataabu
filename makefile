@@ -8,4 +8,4 @@ parser.cmx: tokenizer.cmx parser.ml
 tokenizer.cmx: tokenizer.ml
 	ocamlopt -c tokenizer.ml
 clean:
-	rm -rf *.cmi *.cmx *.o build/
+	rm -rf *.cmi *.cmx *.cmo *.o build/

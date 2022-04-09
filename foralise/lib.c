@@ -7,28 +7,28 @@ typedef struct LL LL;
 typedef enum {MARKED, UNMARKED, UNREACHABLE} MarkingStatus;
 
 typedef struct{
-    unsigned long long refer_address;
-    unsigned long long refee_address;
+    size_t refer_address;
+    size_t refee_address;
     MarkingStatus is_marked;
     bool is_used; 
 
 } RefHashTableItem;
 
-unsigned long long ref_hash_table_size = 2;
-unsigned long long number_of_item = 0;
+size_t ref_hash_table_size = 2;
+size_t number_of_item = 0;
 
 RefHashTableItem *ref_hash_table;
 
 RefHashTableItem* add_item(RefHashTableItem* table, RefHashTableItem item);
 RefHashTableItem* delete_items(RefHashTableItem* table, RefHashTableItem item);
 
-void mark_specific(RefHashTableItem* hash_table, unsigned long long addr);
+void mark_specific(RefHashTableItem* hash_table, size_t addr);
 
 RefHashTableItem* mark(RefHashTableItem* hash_table){
-    for (unsigned long long i =0; i<ref_hash_table_size; i++){
+    for (size_t i =0; i<ref_hash_table_size; i++){
         if (hash_table[i].is_used == true && hash_table[i].refee_address == 0 &&  hash_table[i].is_marked != UNREACHABLE){
             hash_table[i].is_marked = MARKED;
-            unsigned long long address = hash_table[i].refer_address;
+            size_t address = hash_table[i].refer_address;
             mark_specific(hash_table, address);
         }
     }
@@ -36,8 +36,8 @@ RefHashTableItem* mark(RefHashTableItem* hash_table){
     return hash_table;
 }
 
-void mark_specific(RefHashTableItem* hash_table, unsigned long long addr){
-    for (unsigned long long i =0; i<ref_hash_table_size; i++){
+void mark_specific(RefHashTableItem* hash_table, size_t addr){
+    for (size_t i =0; i<ref_hash_table_size; i++){
         if (hash_table[i].refer_address == addr){
             if (hash_table[i].refee_address == 0){
                 hash_table[i].is_marked = MARKED;
@@ -50,7 +50,7 @@ void mark_specific(RefHashTableItem* hash_table, unsigned long long addr){
 }
 
 RefHashTableItem* sweep(RefHashTableItem* hash_table){
-    for (unsigned long long i =0; i<ref_hash_table_size; i++){
+    for (size_t i =0; i<ref_hash_table_size; i++){
         if (hash_table[i].is_marked == UNREACHABLE || hash_table[i].is_marked == UNMARKED){
             
 
@@ -61,7 +61,7 @@ RefHashTableItem* sweep(RefHashTableItem* hash_table){
         }
     }
 
-    for (unsigned long long i=0; i<ref_hash_table_size; i++){
+    for (size_t i=0; i<ref_hash_table_size; i++){
         if ((hash_table[i].is_marked) != UNMARKED){
         hash_table[i].is_marked = UNMARKED;
         }
@@ -77,11 +77,11 @@ RefHashTableItem* resize_ref_table(RefHashTableItem* hash_table){
     RefHashTableItem* new_hash_table = malloc(sizeof (RefHashTableItem)* ref_hash_table_size);
     number_of_item = 0;
 
-    for (unsigned long long i=0;i<ref_hash_table_size;i++){
+    for (size_t i=0;i<ref_hash_table_size;i++){
         new_hash_table[i].is_used = false;
     }
 
-    for (unsigned long long i=0 ; i < (ref_hash_table_size / 2); i++){
+    for (size_t i=0 ; i < (ref_hash_table_size / 2); i++){
         if(hash_table[i].is_used == true){
             add_item(new_hash_table, hash_table[i]);
         }
@@ -99,8 +99,8 @@ RefHashTableItem* add_item(RefHashTableItem* table, RefHashTableItem item){
         table = resize_ref_table(table);
     }
 
-    unsigned long long main_addr = item.refer_address;
-    unsigned long long key = main_addr % ref_hash_table_size;
+    size_t main_addr = item.refer_address;
+    size_t key = main_addr % ref_hash_table_size;
     while (table[key].is_used  == true){
         key = (key + 1) % ref_hash_table_size;
     }
@@ -115,9 +115,9 @@ RefHashTableItem* add_item(RefHashTableItem* table, RefHashTableItem item){
     return table;
 }
 
-RefHashTableItem* unreachize_item(RefHashTableItem* table, unsigned long long addr){
+RefHashTableItem* unreachize_item(RefHashTableItem* table, size_t addr){
 
-    unsigned long long key = addr % ref_hash_table_size;
+    size_t key = addr % ref_hash_table_size;
     while (table[key].refer_address  != addr || table[key].refee_address != 0){
         key = (key + 1) % ref_hash_table_size;
     }

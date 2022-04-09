@@ -10,7 +10,7 @@ typedef struct LL {
 void main(void){
     ref_hash_table = (RefHashTableItem*) malloc(sizeof(RefHashTableItem)* ref_hash_table_size);
 
-    for (unsigned long long i=0;i<ref_hash_table_size;i++){
+    for (size_t i=0;i<ref_hash_table_size;i++){
         ref_hash_table[i].is_used = false;
     }/*
 
@@ -51,8 +51,8 @@ void main(void){
     RefHashTableItem a_;
     a_.is_used = true;
     a_.is_marked = UNMARKED;
-    a_.refer_address = (long long unsigned) a;
-    a_.refee_address = (long long unsigned) a->next;
+    a_.refer_address = (size_t) a;
+    a_.refee_address = (size_t) a->next;
 
     ref_hash_table = (RefHashTableItem*) add_item(ref_hash_table, a_);
 
@@ -62,8 +62,8 @@ void main(void){
     RefHashTableItem b_;
     b_.is_used = true;
     b_.is_marked = UNMARKED;
-    b_.refer_address = (long long unsigned) b;
-    b_.refee_address = (long long unsigned) b->next;
+    b_.refer_address = (size_t) b;
+    b_.refee_address = (size_t) b->next;
 
     ref_hash_table = (RefHashTableItem*) add_item(ref_hash_table, b_);
 
@@ -74,13 +74,13 @@ void main(void){
     RefHashTableItem c1_;
     c1_.is_used = true;
     c1_.is_marked = UNMARKED;
-    c1_.refer_address = (long long unsigned) c;
-    c1_.refee_address = (long long unsigned) c->next;
+    c1_.refer_address = (size_t) c;
+    c1_.refee_address = (size_t) c->next;
 
     RefHashTableItem c2_;
     c2_.is_used = true;
     c2_.is_marked = UNMARKED;
-    c2_.refer_address = (long long unsigned) c;
+    c2_.refer_address = (size_t) c;
     c2_.refee_address = 0;
 
     ref_hash_table = (RefHashTableItem*) add_item(ref_hash_table, c1_);
