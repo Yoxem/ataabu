@@ -35,7 +35,7 @@ let consume1char str =
 let match_range min max = 
   fun input ->
     if min > max then
-     raise (IndexException (min ^ " should be not less than " ^ max))
+      raise (IndexException (min ^ " should be not less than " ^ max))
   else
     let initial_result = consume1char input in
       match initial_result with
@@ -164,7 +164,10 @@ let parse_operator input = input >>= ((match_char "+") || (match_char "-") || (m
 
 let parse_number_mark input = input >>= (match_char "#");;
 
-let parse_equal input = input >>= (match_char "==");;
+let parse_equal input = input >>= (match_char "=") >>= (match_char "=");; (* == *)
+
+let parse_imply input = input >>= (match_char "-") >>= (match_char ">");; (* -> *)
+
 
 let parse_assign input = input >>= (match_char "=");;
 
@@ -197,9 +200,10 @@ let rec total_parser_aux input list =
   | Success(_,"") -> list
   | _ -> 
     let initial = ((fun i -> Aux ((parse_id i), "ID"))
-                ||** (fun i -> Aux ((parse_operator i) ,"OP"))
-                ||** (fun i -> Aux ((parse_int i) ,"INT"))
                 ||** (fun i -> Aux ((parse_float i) ,"FLO"))
+                ||** (fun i -> Aux ((parse_int i) ,"INT"))
+                ||** (fun i -> Aux ((parse_imply i), "IMPLY"))
+                ||** (fun i -> Aux ((parse_operator i) ,"OP"))
                 ||** (fun i -> Aux ((parse_number_mark i) ,"NUM_MRK"))
                 ||** (fun i -> Aux ((parse_brace i) ,"BRACE"))
                 ||** (fun i -> Aux ((parse_comma i) ,"COMMA"))
@@ -234,6 +238,9 @@ print_parse_output (parse_id (Success ("", "_abc12c")));;
 print_parse_output (parse_id (Success ("", "_9")));;
 print_parse_output (parse_id (Success ("", "a_9A")));;
 print_parse_output (parse_id (Success ("", "if")));;
+
+
+print_parse_output (parse_float (Success ("", "+2.0;")));;
 print_parse_output (parse_id (Success ("", "Class")));;
 print_parse_output (parse_id (Success ("", "BIGLETTER123__")));;
 print_parse_output (parse_id (Success ("", "12a")));;
