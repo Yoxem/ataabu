@@ -39,29 +39,44 @@ Hashtbl.add type_inference_table "*" (OpType(Simp("INT") , Simp("INT"),  Simp("I
 
 
 
-let ex_token_list2 = Tokenizer.total_parser "3.0;12;6;7;3.0;3 + 2.0;";;
+let ex_token_list2 = Tokenizer.total_parser "a; 3; int a = 15; 1; a;";;
 let ex_parseoutput2 = Parser.stmts ex_token_list2;;
 
 let rec line_infer = fun l ->
   match l with
-  | Parser.Item(Tokenizer.Token(const, typ)) -> Simp(typ)
+  | Parser.Ls ([Parser.Item(Tokenizer.Token("%def", "ID")); typ; Parser.Item(Tokenizer.Token(id, "ID")); rhs]) ->
+    (let rhs_type = line_infer rhs in
+    match typ with
+    | Parser.Item(Tokenizer.Token(simp, "ID")) ->
+      if equal_type (Simp(String.uppercase_ascii simp)) rhs_type
+        then
+          let _ = Hashtbl.add type_inference_table id (Simp(String.uppercase_ascii simp)) in
+          Void
+        else TypeError ("lhs and rhs type unmatched.")
+      (*lambda : todo*)
+    | _ -> Void)
+
   | Parser.Ls ([Parser.Item(Tokenizer.Token(opr, "OP")); lhs; rhs]) ->
     let lhs_type = line_infer lhs in
     let rhs_type = line_infer rhs in
     let op_type = Hashtbl.find type_inference_table opr in
-    match op_type with
+    (match op_type with
     | OpType(op_lhs_type, op_rhs_type, op_res_type) ->
       if (equal_type lhs_type op_lhs_type) && (equal_type op_rhs_type rhs_type) then
         op_res_type
       else
         TypeError ("op_type unmatched: " ^  opr)
-    | _ -> TypeError "operator unfound"
+    | _ -> TypeError "operator unfound" )
+  | Parser.Ls (Parser.Item(Tokenizer.Token(opr, "OP"))::rest) -> TypeError "operator unfound"
+  | Parser.Item(Tokenizer.Token(var, "ID")) -> Hashtbl.find type_inference_table var
+  | Parser.Item(Tokenizer.Token(const, typ)) -> Simp(typ)
   | _ -> TypeError "other type error";;
 
 
 Parser.print_parseoutput ex_parseoutput2;;
 
 match ex_parseoutput2 with
-  | Success(Ls(lines), remained_tokens) -> List.map line_infer lines
-  | _ -> [Void];
+  | Success(Ls(lines), remained_tokens) -> List.map (fun x -> print_string (type2string x)) (List.map line_infer lines)
+  | _ -> List.map (fun x -> print_string (type2string x))  [Void]
+
 

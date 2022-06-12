@@ -327,10 +327,10 @@ let ex_token_list = Tokenizer.total_parser "a(b,c,a);";;
 print_parseoutput (stmts ex_token_list);;
 
 
-print_string "\n\n";;
-let ex_token_list = Tokenizer.total_parser "int a = 2+3;a + b;";;
-print_parseoutput (stmts ex_token_list);;
-print_string "\n\n";;
+print_string "\n\n";;*)
+(*let ex_token_list = Tokenizer.total_parser "(int -> int) a = 2+ 3;a + b;";;
+print_parseoutput (stmts ex_token_list);;*)
+(*print_string "\n\n";;
 let ex_token_list = Tokenizer.total_parser "(int-> int) foo = lambda(int a, int b, int c){12;};";;
 print_parseoutput (stmts ex_token_list);;
 
