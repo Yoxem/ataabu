@@ -288,14 +288,17 @@ let wrapper = Success(Ls([]),  token_list) in
   | Success(Ls(_), remained_tokens) -> result1
   | _ -> result1 ;;
 
-(*examples
+(*examples*)
 
-let ex_token_list = Tokenizer.total_parser "2-3;";;
+let ex_token_list = Tokenizer.total_parser "lambda(int y){12;};";;
 
-(*  List.iter Tokenizer.print_token ex_token_list;;  *)
+List.iter Tokenizer.print_token ex_token_list;; 
+print_string "字串輸出結果";
 
 print_parseoutput (one_statement ex_token_list);;
 print_string "\n\n";;
+
+(*
 
 let ex_token_list = Tokenizer.total_parser "(2);";;
 
@@ -334,10 +337,6 @@ print_parseoutput (stmts ex_token_list);;*)
 let ex_token_list = Tokenizer.total_parser "(int-> int) foo = lambda(int a, int b, int c){12;};";;
 print_parseoutput (stmts ex_token_list);;
 
-
-print_string "\n\n";;
-let ex_token_list = Tokenizer.total_parser "lambda(a, b){12;};";;
-print_parseoutput (stmts ex_token_list);;
 
 print_string "\n\n";;
 let ex_token_list = Tokenizer.total_parser "lambda(a){12;};";;
