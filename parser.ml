@@ -158,6 +158,7 @@ and item token_list =
                                         Success(Ls([Item(Token("lambda", "ID"));args;Ls([])]), remained)
     | Success(Ls([Ls(Item(Token("lambda", "ID"))::args::l_brace::body::r_brace)]) , remained) ->
                                         Success(Ls([Item(Token("lambda", "ID"));args;body]), remained)
+    | Success(Ls([Ls([Item(Token(x,y))])]), remained) -> Success(Item(Token(x,y)), remained)
     | _ ->  result1
 
 
@@ -288,7 +289,7 @@ let wrapper = Success(Ls([]),  token_list) in
   | Success(Ls(_), remained_tokens) -> result1
   | _ -> result1 ;;
 
-(*examples*)
+(*examples
 
 let ex_token_list = Tokenizer.total_parser "lambda(int y){12;};";;
 
@@ -298,7 +299,7 @@ print_string "字串輸出結果";
 print_parseoutput (one_statement ex_token_list);;
 print_string "\n\n";;
 
-(*
+
 
 let ex_token_list = Tokenizer.total_parser "(2);";;
 
@@ -334,9 +335,11 @@ print_string "\n\n";;*)
 (*let ex_token_list = Tokenizer.total_parser "(int -> int) a = 2+ 3;a + b;";;
 print_parseoutput (stmts ex_token_list);;*)
 (*print_string "\n\n";;
-let ex_token_list = Tokenizer.total_parser "(int-> int) foo = lambda(int a, int b, int c){12;};";;
-print_parseoutput (stmts ex_token_list);;
 
+
+let ex_token_list = Tokenizer.total_parser "(int-> int) foo = lambda(int c){12;};foo(13);";;
+print_string "ABACABRA";;
+print_parseoutput (stmts ex_token_list);;
 
 print_string "\n\n";;
 let ex_token_list = Tokenizer.total_parser "lambda(a){12;};";;

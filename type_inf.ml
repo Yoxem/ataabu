@@ -53,11 +53,12 @@ let rec line_infer l ref_list type_list =
       Parser.Ls([Parser.Item(Tokenizer.Token(typ, "ID"));Parser.Item(Tokenizer.Token(id, "ID"))])]); Parser.Ls(body)]) ->
       (let new_ref_list = ref ([ ]::!ref_list) in
       let new_type_inference_table_block =  Hashtbl.create 10 in
-      let _ = Hashtbl.add new_type_inference_table_block id (Simp(String.uppercase_ascii typ)) in
+      let real_typ = Simp(String.uppercase_ascii typ) in
+      let _ = Hashtbl.add new_type_inference_table_block id real_typ in
       let new_type_inference_table_list = ref (new_type_inference_table_block::!type_list) in
       let a = (List.map (fun x -> line_infer x new_ref_list new_type_inference_table_list) body) in
       let last_of_a = (List.nth a ((List.length a)-1)) in
-      Imply(Simp(typ), last_of_a))
+      Imply(real_typ, last_of_a))
 
   (*definition *)
   | Parser.Ls ([Parser.Item(Tokenizer.Token("%def", "ID")); typ; Parser.Item(Tokenizer.Token(id, "ID")); rhs]) ->
@@ -74,6 +75,14 @@ let rec line_infer l ref_list type_list =
         else TypeError ("lhs and rhs type unmatched.")
       (*lambda : todo*)
     | _ -> Void))
+  | Parser.Ls ([Parser.Item(Tokenizer.Token("%apply", "ID")); caller; callee]) ->
+    ( let caller_type = line_infer caller ref_list type_list in
+    let callee_type = line_infer callee ref_list type_list in 
+
+    (match caller_type with
+      | Imply(arg_type,ret_type) -> if equal_type callee_type arg_type then ret_type else TypeError ("arg type and callee type unmatched.")
+      | _ -> TypeError ("arg type and callee type unmatched.")
+      ))
   (* operator *)
   | Parser.Ls ([Parser.Item(Tokenizer.Token(opr, "OP")); lhs; rhs]) ->
     let lhs_type = line_infer lhs ref_list type_list in
@@ -106,16 +115,23 @@ let rec line_infer l ref_list type_list =
   | Parser.Item(Tokenizer.Token(const, typ)) -> Simp(typ)
   | _ -> TypeError "other type error";;
 
-let ex_token_list2 = Tokenizer.total_parser "int a = 15; 3;  1 + 1; a;lambda(int b){lambda(int a){a;};};";;
-let ex_parseoutput2 = Parser.stmts ex_token_list2;;
 
-Parser.print_parseoutput ex_parseoutput2;;
 
-print_string "\n\n型別推敲";
+let type_infer parseoutput = 
+  let result  =match parseoutput with
+    | Parser.Success(Ls(lines), remained_tokens) ->
+      List.map (fun x -> line_infer x ref_list type_inference_table_list) lines
+    | _ -> [Void] in
+  
+  let print_err typ = match typ with 
+  | TypeError(msg) -> let _ = print_string ("TypeError:" ^ msg) in ()
+  | _ -> () in
+  List.map print_err result
 
-match ex_parseoutput2 with
-  | Success(Ls(lines), remained_tokens) ->
-    List.map (fun x -> print_string (type2string x ^ ";")) (List.map (fun x -> line_infer x ref_list type_inference_table_list) lines)
-  | _ -> List.map (fun x -> print_string (type2string x))  [Void]
+(*    let type_infer parseoutput = 
+      match parseoutput with
+        | Parser.Success(Ls(lines), remained_tokens) ->
+          List.map (fun x -> print_string (type2string x ^ ";")) (List.map (fun x -> line_infer x ref_list type_inference_table_list) lines)
+        | _ -> List.map (fun x -> print_string (type2string x))  [Void]*)
 
 
