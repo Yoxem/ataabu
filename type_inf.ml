@@ -40,7 +40,7 @@ Hashtbl.add type_inference_table "*" (OpType(Simp("INT") , Simp("INT"),  Simp("I
 let type_inference_table_list = ref [type_inference_table;];;
 let reference_list = ref [[""]];;
 
-let ref_list = ref[["c"; "d"];[];["a"; "b"]];; (*prepared*)
+let ref_list = ref[["c"; "d"];[];["a"; "b"]];; (*prepared for testing*)
 
 
 
@@ -63,6 +63,9 @@ let rec line_infer l ref_list type_list =
   (*definition *)
   | Parser.Ls ([Parser.Item(Tokenizer.Token("%def", "ID")); typ; Parser.Item(Tokenizer.Token(id, "ID")); rhs]) ->
     (let rhs_type = line_infer rhs ref_list type_list in
+    (* let _ = print_string ("~~~" ^ id ^ "~~") in 
+    let _ = (List.map print_string (List.nth !ref_list 0))in 
+    let _ = print_string "~~~ " in *)
     if List.mem id (List.nth !ref_list 0) then
       TypeError ("duplicated defined.")
     else(
@@ -70,6 +73,7 @@ let rec line_infer l ref_list type_list =
     | Parser.Item(Tokenizer.Token(simp, "ID")) ->
       if equal_type (Simp(String.uppercase_ascii simp)) rhs_type
         then
+          let _ = (ref_list := (id::List.hd !ref_list)::(List.tl !ref_list)) in
           let _ = Hashtbl.add type_inference_table id (Simp(String.uppercase_ascii simp)) in
           Void
         else TypeError ("lhs and rhs type unmatched.")
@@ -120,7 +124,7 @@ let rec line_infer l ref_list type_list =
 let type_infer parseoutput = 
   let result  =match parseoutput with
     | Parser.Success(Ls(lines), remained_tokens) ->
-      List.map (fun x -> line_infer x ref_list type_inference_table_list) lines
+      List.map (fun x -> line_infer x reference_list type_inference_table_list) lines
     | _ -> [Void] in
   
   let print_err typ = match typ with 

@@ -1,4 +1,5 @@
 module SS = Set.Make(String);;
+open Printf;;
 
 (*let ex_token_list2 = Tokenizer.total_parser "int a = 15; 3;  1 + 1; a; (lambda(int y){lambda(int x){y+x;};}(12));";;
 let ex_parseoutput2 = Parser.stmts ex_token_list2;;
@@ -51,8 +52,9 @@ let rec find_free_var l bound_vars =
       SS.elements set_result
     (*lambda*)
     | [Parser.Item(Tokenizer.Token("lambda", "ID")); Parser.Ls([args_header; Parser.Ls([typ; arg])]); body] ->
-      let list_body =  find_free_var body bound_vars in 
-      let list_arg = find_free_var arg bound_vars in 
+      let new_bound_var_frame = ref [] in
+      let list_body =  find_free_var body new_bound_var_frame in 
+      let list_arg = find_free_var arg new_bound_var_frame in 
       let empty_set = SS.empty in
       let set_inner = List.fold_right SS.add list_body empty_set in
       let set_id = List.fold_right SS.add list_arg empty_set in
@@ -71,19 +73,79 @@ let rec find_free_var l bound_vars =
 
 
 
-  let ex_token_list = Tokenizer.total_parser "int a = b ; a;lambda(int a){a + c;};d;";;
+  let ex_token_list = Tokenizer.total_parser "int a = 12 ; int d = 16; lambda(int b){a + b + d;};20;";;
   let ex_parseoutput = Parser.stmts ex_token_list;;
 
   Type_inf.type_infer ex_parseoutput;;
 
-  
-  Parser.print_parseoutput ex_parseoutput;;
 
-  let clusure_conv_main parseoutput = 
+
+let genclosure =
+  let x = ref 0 in 
+    fun () ->
+    let tmp = Printf.sprintf "clos%d" (!x) in
+    let _ = (x := !x + 1) in
+    tmp;;
+  
+(* Parser.print_parseoutput ex_parseoutput;; *)
+
+let rec get_index_aux ls item idx =
+  if idx == (List.length ls) then -1
+  else
+    (if (List.nth ls idx) == item then idx
+    else get_index_aux ls item (idx+1))
+
+let get_index ls item = 
+  if List.mem item ls then
+    get_index_aux ls item 0
+  else -1
+
+
+  let rec replacing_vars ln fv clos_sym =
+    match ln with
+    | Parser.Ls(list) -> Parser.Ls(List.map (fun x -> replacing_vars x fv clos_sym) list)
+    | Parser.Item(Tokenizer.Token(id, typ)) ->
+      if (List.mem id fv) then
+      (let index = get_index fv id in
+      let sym_name = Printf.sprintf "%s.%d" clos_sym index in
+      Parser.Item(Tokenizer.Token(sym_name, "ID")))
+      else ln
+    | _ -> ln
+
+
+
+
+
+let rec closure_conv_replacing fv line = 
+  let _ = List.map print_string fv in
+  let tmp_list1 = List.map (fun var -> Parser.Item(Tokenizer.Token(var, "ID"))) fv in
+  let fv_list = Parser.Ls(Parser.Item(Tokenizer.Token("%struct", "ID"))::tmp_list1) in
+  let closure_symbol = (genclosure ()) in
+  let def_closure_list = Parser.Ls([Parser.Item(Tokenizer.Token("%def", "ID"));
+                                    Parser.Item(Tokenizer.Token("STRUCT", "ID"));
+                                    Parser.Item(Tokenizer.Token(closure_symbol, "ID"));
+                                    fv_list]) in
+  match line with
+  | Parser.Ls([Parser.Item(Tokenizer.Token("lambda", "ID")); Parser.Ls(args); Parser.Ls(body)]) -> 
+    let replaced_body = List.map (fun l -> replacing_vars l fv closure_symbol) body in
+    let replaced_lambda = Parser.Ls([Parser.Item(Tokenizer.Token("%lambda", "ID")); Parser.Ls(args); Parser.Ls(replaced_body)]) in
+    let return_result =  Parser.Ls([def_closure_list; replaced_lambda]) in
+    return_result
+  | _ -> line
+
+
+
+  
+
+  let closure_conv_main parseoutput = 
     (match parseoutput with
       | Parser.Success(Ls(lines), remained_tokens) ->
         (let free_var = ref [] in
-        List.map (fun x -> find_free_var x free_var) lines)
+        List.map (fun ln -> let fv = find_free_var ln free_var in
+                            (*let _ = print_string "===" in 
+                            let _ = List.map print_string fv in*)
+                            if fv != [] then closure_conv_replacing fv ln
+                            else ln) lines)
       | _ -> []);;
 
-List.map (fun ls -> List.map print_string ls) (clusure_conv_main ex_parseoutput);;
+    List.map (fun x -> print_string (Parser.ast2string x)) (closure_conv_main ex_parseoutput);;
