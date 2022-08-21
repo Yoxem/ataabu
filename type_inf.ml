@@ -81,7 +81,7 @@ let rec line_infer l ref_list type_list =
     | _ -> Void))
   | Parser.Ls ([Parser.Item(Tokenizer.Token("%apply", "ID")); caller; callee]) ->
     ( let caller_type = line_infer caller ref_list type_list in
-    let callee_type = line_infer callee ref_list type_list in 
+  let callee_type = line_infer callee ref_list type_list in 
 
     (match caller_type with
       | Imply(arg_type,ret_type) -> if equal_type callee_type arg_type then ret_type else TypeError ("arg type and callee type unmatched.")

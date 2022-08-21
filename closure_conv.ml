@@ -137,7 +137,7 @@ let rec closure_conv_replacing fv line =
 
   
 
-  let closure_conv_main parseoutput = 
+  let closure_conv_aux2 parseoutput = 
     (match parseoutput with
       | Parser.Success(Ls(lines), remained_tokens) ->
         (let free_var = ref [] in
@@ -147,5 +147,15 @@ let rec closure_conv_replacing fv line =
                             if fv != [] then closure_conv_replacing fv ln
                             else ln) lines)
       | _ -> []);;
+
+let closure_conv_main input =
+  let middle = closure_conv_aux2 input in
+  let rec modifier ls  =
+  match ls with
+  | Parser.Ls([Parser.Ls(Parser.Item(Tokenizer.Token("%def", "ID"))::Parser.Item(Tokenizer.Token("STRUCT", "ID"))::rs1 ); rs2 ])::rs3 ->
+    Parser.Ls(Parser.Item(Tokenizer.Token("%def", "ID"))::Parser.Item(Tokenizer.Token("STRUCT", "ID"))::rs1)::rs2::rs3
+  | hd::rs ->hd::(modifier rs)
+  | _ -> ls in
+  modifier middle;;
 
     List.map (fun x -> print_string (Parser.ast2string x)) (closure_conv_main ex_parseoutput);;

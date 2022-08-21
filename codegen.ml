@@ -11,13 +11,17 @@ let gensym =
 let ex_token_list = Tokenizer.total_parser "lambda(x){x;}(12);";;
 Parser.print_parseoutput (Parser.stmts ex_token_list);;*)
 
-let ex_token_list2 = Tokenizer.total_parser "12;7;3+5;";;
+let ex_token_list2 = Tokenizer.total_parser "12;7;int a = 1 + 2;lambda(int x){x + a;};9;";;
 let ex_parseoutput2 = Parser.stmts ex_token_list2;;
-let ex_asttree2 = match ex_parseoutput2 with
-  | Success(x, remained) -> x
-  | Fail -> ASTFail;;
 
-(* print_string (Parser.ast2string ex_asttree2);; *)
+let infering_result = Type_inf.type_infer ex_parseoutput2;; (*type infering*)
+let ex_parseoutput3 = Parser.Ls(Closure_conv.closure_conv_main ex_parseoutput2);; (*closure_conversion*) 
+
+
+print_string (Parser.ast2string ex_parseoutput3);;
+
+
+
 
 let list_mut = ref (Parser.Ls([]));;
 let main_str = ref "";;
@@ -33,32 +37,68 @@ and codegen_aux ast_tree =
   match ast_tree with
   | Parser.Item(Tokenizer.Token(num, "INT")) ->
       let sym = (gensym ()) in
-      let fmt = format_of_string "Object *%s = malloc(sizeof(Object));
-          (%s->type) =\"int\";
-          (%s->cont).i = %d;\n"  in
+      let fmt = format_of_string "
+          Object %s;
+          %s.type =\"int\";
+          %s.value.inte = %d;\n"  in
       let item_str = Printf.sprintf fmt sym sym sym (int_of_string num) in
       main_str := !(main_str) ^ item_str;
       sym
-  | Parser.Item(Tokenizer.Token(var, "ID"))  ->
-    main_str := !(main_str) ^ var ^ ";\n";
-    var
+  | Parser.Item(Tokenizer.Token(var, "ID"))  -> main_str := !(main_str) ^ "\t" ^ var  ^ ";"; var
   | Parser.Ls([Parser.Item(Tokenizer.Token("+", "OP")); x; y]) ->
-      let lhs = codegen_aux x in
+    let sym = (gensym ()) in
+    let lhs = codegen_aux x in
+    let rhs = codegen_aux y in
+    let fmt = format_of_string
+      "
+      Object %s;
+      %s.type = %s.type;
+      if (%s.type = \"int\"){
+        %s.value.inte = %s.value.inte + %s.value.inte;}
+    else if (%s.type = \"flo\"){
+      %s.value.doub = %s.value.doub + %s.value.doub;
+    }
+      %s;\n" in
+      let item_str = (Printf.sprintf fmt sym sym lhs lhs sym lhs rhs sym sym lhs rhs sym) in
+      let _ = (main_str := !(main_str) ^ item_str ) in
+      sym
+    
+  | Parser.Ls([Parser.Item(Tokenizer.Token("%def", "ID")); Parser.Item(Tokenizer.Token("STRUCT", "ID"))  ;
+    Parser.Item(Tokenizer.Token(clo_fv, "ID")) ; Parser.Ls(Parser.Item(Tokenizer.Token("%struct", "ID"))::fv_list)]) ->
+    (*let fv_list = List.tl fv_ls in (*fv = free variable*)*)
+    let fv_string_list = List.map (fun x -> match x with
+                                            |Parser.Item(Tokenizer.Token(x, "ID"))-> x
+                                            |_ -> "")
+                                            fv_list in
+    let result_rhs = "{" ^ (List.fold_right (fun x y -> x ^ ", " ^ y) fv_string_list "") ^ "}" in
+    let fmt = format_of_string "
+    Object* %s = %s;\n\n" in 
+    let item_str = (Printf.sprintf fmt clo_fv result_rhs) in
+    let _ = (main_str := !(main_str) ^ item_str ) in
+      ""
+    | Parser.Ls([Parser.Item(Tokenizer.Token("%def", "ID")); typ; Parser.Item(Tokenizer.Token(lhs, "ID")); y]) ->
       let rhs = codegen_aux y in
-      let sym_array = gensym () in
-      let sym_res = gensym () in
-      let fmt = format_of_string
-      "Object* %s[2];
-      %s[0] = %s;
-      %s[1] = %s;
-      Object *%s = malloc(sizeof(Object));
-      %s = add(%s, 0);" in
-      let item_str = Printf.sprintf fmt sym_array sym_array lhs sym_array rhs sym_res sym_res sym_array in
-      main_str := !(main_str) ^ item_str;
-      sym_res
+      let fmt = format_of_string 
+      "
+      Object %s;
+      %s.type = %s.type;
+      if (%s.type = \"int\"){
+        %s.value.inte = %s.value.inte;}
+      else if (%s.type = \"flo\"){
+        %s.value.doub = %s.value.doub;
+    }
+    else{
+      %s.value.func = %s.value.func;
+    }\n" in
+    let item_str = (Printf.sprintf fmt lhs lhs rhs lhs lhs rhs lhs lhs rhs lhs rhs) in
+    let _ = (main_str := !(main_str) ^ item_str ) in
+    ""
   | _ -> "0";;
 
-let output_var_string =  (codegen ex_asttree2);;
+
+print_string !main_str;;
+
+let output_var_string =  codegen ex_parseoutput3;;
 
 let print_main str = 
   let preamble = format_of_string
@@ -66,47 +106,25 @@ let print_main str =
   #include <stdio.h>
   #include <stdlib.h>
   
-  typedef struct Object Object;
-  typedef Object* (Func)  (Object**, Object**);
-  typedef struct Clos
-  {
-    Func* func;
-    Object** free_vars;
-  } Clos;
+typedef struct Object Object;
+
+typedef union ObjectValue{
+  int inte;
+  double doub;
+  char *str;
+  Object (*func) (Object, Object*);
   
-  
-  typedef union ObjCont
-  {
-      int i;
-      float f;
-      Object * obj_ptr;
-      Clos clos;
-  }
-  ObjCont;
-  
-  typedef struct Object
-  {
-      char *type;
-      ObjCont cont;
-  }
-  Object;
-  
-  Object* add(Object** args, Object** free_vars){
-      Object *result = malloc(sizeof(Object));
-      (result->type) = \"int\";
-      (result->cont).i = (args[0]->cont).i + (args[1]->cont).i;  
-      return result;
-    }
-  
-  int main(void)
-  {
-      Object *add_b78e8kc8 = malloc(sizeof(Object));
-      (add_b78e8kc8->type) = \"closure\";
-      (add_b78e8kc8->cont).clos.func = add;
-      (add_b78e8kc8->cont).clos.free_vars = 0;
-    %s;
-    return 0;
-    }
+  } ObjectValue;
+
+typedef struct Object{
+  char* type;
+  ObjectValue value;
+  } Object;
+
+  int main() {
+    %s
+    return 0;}
+
     " in
     Printf.sprintf preamble str;;
 
