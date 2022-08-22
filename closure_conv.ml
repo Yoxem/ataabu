@@ -107,7 +107,7 @@ let get_index ls item =
     | Parser.Item(Tokenizer.Token(id, typ)) ->
       if (List.mem id fv) then
       (let index = get_index fv id in
-      let sym_name = Printf.sprintf "%s.%d" clos_sym index in
+      let sym_name = Printf.sprintf "fv[%d]" index in
       Parser.Item(Tokenizer.Token(sym_name, "ID")))
       else ln
     | _ -> ln
@@ -128,7 +128,7 @@ let rec closure_conv_replacing fv line =
   match line with
   | Parser.Ls([Parser.Item(Tokenizer.Token("lambda", "ID")); Parser.Ls(args); Parser.Ls(body)]) -> 
     let replaced_body = List.map (fun l -> replacing_vars l fv closure_symbol) body in
-    let temp = Parser.Ls([Parser.Item(Tokenizer.Token("object*", "ID")); Parser.Item(Tokenizer.Token(closure_symbol,"ID"))]) in
+    let temp = Parser.Ls([Parser.Item(Tokenizer.Token("Object*", "ID")); Parser.Item(Tokenizer.Token(closure_symbol,"ID"))]) in
     let replaced_lambda = Parser.Ls([Parser.Item(Tokenizer.Token("%lambda", "ID")); Parser.Ls(args @ [temp]); Parser.Ls(replaced_body)]) in
     let return_result =  Parser.Ls([def_closure_list; replaced_lambda]) in
     return_result
