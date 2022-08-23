@@ -103,9 +103,12 @@ let get_index ls item =
 
   let rec replacing_vars ln fv clos_sym =
     match ln with
+    | Parser.Ls([Parser.Ls(list)]) ->  replacing_vars (Parser.Ls(list)) fv clos_sym
     | Parser.Ls(list) -> Parser.Ls(List.map (fun x -> replacing_vars x fv clos_sym) list)
     | Parser.Item(Tokenizer.Token(id, typ)) ->
       if (List.mem id fv) then
+        (*let _ = print_string ("上大人" ^ id ^ "孔乙己") in *)
+
       (let index = get_index fv id in
       let sym_name = Printf.sprintf "fv[%d]" index in
       Parser.Item(Tokenizer.Token(sym_name, "ID")))
@@ -129,9 +132,13 @@ let rec closure_conv_replacing fv line =
   | Parser.Ls([Parser.Item(Tokenizer.Token("lambda", "ID")); Parser.Ls(args); Parser.Ls(body)]) -> 
     let replaced_body = List.map (fun l -> replacing_vars l fv closure_symbol) body in
     let temp = Parser.Ls([Parser.Item(Tokenizer.Token("Object*", "ID")); Parser.Item(Tokenizer.Token(closure_symbol,"ID"))]) in
-    let replaced_lambda = Parser.Ls([Parser.Item(Tokenizer.Token("%lambda", "ID")); Parser.Ls(args @ [temp]); Parser.Ls(replaced_body)]) in
+    let replaced_lambda = Parser.Ls([Parser.Item(Tokenizer.Token("lambda", "ID")); Parser.Ls(args @ [temp]); Parser.Ls(replaced_body)]) in
     let return_result =  Parser.Ls([def_closure_list; replaced_lambda]) in
     return_result
+  | Parser.Ls([Parser.Item(Tokenizer.Token("%apply" , "ID")); caller; callee]) ->
+    let caller_new = closure_conv_replacing fv caller in 
+    let callee_new = closure_conv_replacing fv callee in 
+    Parser.Ls([Parser.Item(Tokenizer.Token("%apply" , "ID")); caller_new; callee_new])
   | _ -> line
 
 
@@ -143,10 +150,7 @@ let rec closure_conv_replacing fv line =
       | Parser.Success(Ls(lines), remained_tokens) ->
         (let free_var = ref [] in
         List.map (fun ln -> let fv = find_free_var ln free_var in
-                            (*let _ = print_string "===" in 
-                            let _ = List.map print_string fv in*)
-                            if fv != [] then closure_conv_replacing fv ln
-                            else ln) lines)
+                            closure_conv_replacing fv ln) lines)
       | _ -> []);;
 
 let closure_conv_main input =

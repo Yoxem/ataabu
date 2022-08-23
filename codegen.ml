@@ -14,7 +14,7 @@ let gensym =
 let ex_token_list = Tokenizer.total_parser "lambda(x){x;}(12);";;
 Parser.print_parseoutput (Parser.stmts ex_token_list);;*)
 
-let ex_token_list2 = Tokenizer.total_parser "12;7;int a = 1 + 2;lambda(int x){x + a;};9;";;
+let ex_token_list2 = Tokenizer.total_parser "(lambda(int x){x + 2;}(20));";;
 let ex_parseoutput2 = Parser.stmts ex_token_list2;;
 
 let infering_result = Type_inf.type_infer ex_parseoutput2;; (*type infering*)
@@ -28,6 +28,7 @@ print_string (Parser.ast2string ex_parseoutput3);;
 
 let list_mut = ref (Parser.Ls([]));;
 let main_str = ref "";;
+let lambda_counter = ref 1;;
 
 let get_args_sym_string x =
   match x with
@@ -35,14 +36,27 @@ let get_args_sym_string x =
   | _ -> ""
                             
 
+
 let rec codegen ast_tree main_str =
   match ast_tree with
-  | Parser.Ls(ls_inner) -> let _ = (List.map (fun x ->  codegen_aux x main_str) ls_inner) in !main_str
-  | Parser.Item(_) -> codegen ast_tree main_str
-  | Parser.ASTFail -> ""
+  | Parser.Ls(ls_inner) -> let a = (List.map (fun x ->  codegen_aux x main_str) ls_inner) in (!main_str, (List.hd (List.rev a)))
+  | Parser.Item(x) -> let a =  codegen_aux ast_tree main_str in (a, a)
+  | Parser.ASTFail -> ("", "")
 
 and codegen_aux ast_tree main_str= 
   match ast_tree with
+  | Parser.Ls([Parser.Item(Tokenizer.Token("%apply", "ID")); caller; callee ]) ->
+    let caller_side = codegen_aux caller main_str in 
+    let callee_side = codegen_aux callee main_str in
+    let res_sym = gensym () in
+    let fmt = format_of_string "
+          Object %s;
+          %s = %s.value.func(%s, %s.free_var);
+          "  in
+    let item_str = Printf.sprintf fmt res_sym res_sym caller_side callee_side caller_side in
+    main_str := !(main_str) ^ item_str;
+    res_sym
+
   | Parser.Item(Tokenizer.Token(num, "INT")) ->
       let sym = (gensym ()) in
       let fmt = format_of_string "
@@ -52,15 +66,17 @@ and codegen_aux ast_tree main_str=
       let item_str = Printf.sprintf fmt sym sym sym (int_of_string num) in
       main_str := !(main_str) ^ item_str;
       sym
-  | Parser.Ls([Parser.Item(Tokenizer.Token("%lambda", "ID")); Parser.Ls(args_id::args); body ]) ->
+  | Parser.Ls([Parser.Item(Tokenizer.Token("lambda", "ID")); Parser.Ls(args_id::args); body ]) ->
+    let current_lambda_counter = !lambda_counter in
+    let _ = lambda_counter := !lambda_counter + 1 in
     let args_str_array = List.map get_args_sym_string args in
     let arg_str = List.hd args_str_array in
     let function_str = ref "" in
-    let body_string = codegen body function_str in
+    let (body_string, get_return_id) = codegen body function_str in
 
     let sym_lambda = gensym () in
     let sym_closure = gensym () in
-    let return_str = "return sym" ^ (to_string (!counter - 3)) ^ ";" in
+    let return_str = "return " ^ get_return_id ^ ";" in
     let fmt = format_of_string "
     Object %s (Object %s, Object* fv){
       %s
@@ -76,9 +92,10 @@ and codegen_aux ast_tree main_str=
 
     Object %s;
     %s.type= \"func\";
-    %s.value.func= &%s;
+    %s.value.func = &%s;
+    %s.free_var = clos%d ;
     " in
-    let item_str = Printf.sprintf closure_str_fmt item_str_tmp sym_closure sym_closure sym_closure sym_lambda in
+    let item_str = Printf.sprintf closure_str_fmt item_str_tmp sym_closure sym_closure sym_closure sym_lambda sym_closure current_lambda_counter in
     main_str := !(main_str) ^ item_str ;
     sym_closure
 
@@ -131,12 +148,10 @@ and codegen_aux ast_tree main_str=
     let item_str = (Printf.sprintf fmt lhs lhs rhs lhs lhs rhs lhs lhs rhs lhs rhs) in
     let _ = (main_str := !(main_str) ^ item_str ) in
     ""
+  | Parser.Ls([Parser.Ls(inner)]) -> (codegen_aux (Parser.Ls(inner)) main_str)
   | _ -> "0";;
 
-
-
-
-let output_var_string =  codegen ex_parseoutput3 main_str;;
+let (output_var_string, _) =  codegen ex_parseoutput3 main_str;;
 
 let print_main str = 
   let preamble = format_of_string
@@ -157,6 +172,7 @@ typedef union ObjectValue{
 typedef struct Object{
   char* type;
   ObjectValue value;
+  Object* free_var;
   } Object;
 
   int main() {

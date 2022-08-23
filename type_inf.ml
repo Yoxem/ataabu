@@ -99,7 +99,7 @@ let rec line_infer l ref_list type_list =
       else
         TypeError ("op_type unmatched: " ^  opr)
     | _ -> TypeError "operator unfound" )
-  | Parser.Ls (Parser.Item(Tokenizer.Token(opr, "OP"))::rest) -> TypeError "operator unfound"
+  | Parser.Ls (Parser.Item(Tokenizer.Token(opr, "OP"))::rest) -> TypeError ("operator unfound: " ^ opr)
   (*variable*)
   | Parser.Item(Tokenizer.Token(var, "ID")) ->
     (let id_type = ref (Some(TypeError "unfound")) in
