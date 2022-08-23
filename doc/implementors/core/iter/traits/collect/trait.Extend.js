@@ -1,3 +1,0 @@
-(function() {var implementors = {};
-implementors["trees"] = [{"text":"impl&lt;T&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/iter/traits/collect/trait.Extend.html\" title=\"trait core::iter::traits::collect::Extend\">Extend</a>&lt;<a class=\"struct\" href=\"trees/tree/struct.Tree.html\" title=\"struct trees::tree::Tree\">Tree</a>&lt;T&gt;&gt; for <a class=\"enum\" href=\"trees/rc/enum.RcNode.html\" title=\"enum trees::rc::RcNode\">RcNode</a>&lt;T&gt;","synthetic":false,"types":["trees::rc::RcNode"]}];
-if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

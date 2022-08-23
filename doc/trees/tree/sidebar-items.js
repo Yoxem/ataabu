@@ -1,1 +1,0 @@
-initSidebarItems({"struct":[["Tree","Composed of a root `Node` and a list of its child `Node`s."]]});

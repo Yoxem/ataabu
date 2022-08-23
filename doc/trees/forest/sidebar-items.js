@@ -1,1 +1,0 @@
-initSidebarItems({"struct":[["Forest","List of `Node`s as its children."]]});

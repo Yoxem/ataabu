@@ -1,1 +1,0 @@
-initSidebarItems({"enum":[["Visit","Visit one node in tree/forest building process, using tuple notations."]],"trait":[["TupleForest","For tuple notations to construct `Forest`."],["TupleTree","For tuple notations to construct `Tree`."]]});

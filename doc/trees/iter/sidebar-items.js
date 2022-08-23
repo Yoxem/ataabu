@@ -1,1 +1,0 @@
-initSidebarItems({"struct":[["Iter","An iterator over the child `Node`s of `Tree`, `Node` or `Forest`."],["IterMut","A mutable iterator over the child `Node`s of `Tree`, `Node` or `Forest`."]]});

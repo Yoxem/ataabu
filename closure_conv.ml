@@ -72,11 +72,11 @@ let rec find_free_var l bound_vars =
 
 
 
-
+(*
   let ex_token_list = Tokenizer.total_parser "int a = 12 ; int d = 16; lambda(int b){a + b + d;};20;";;
   let ex_parseoutput = Parser.stmts ex_token_list;;
 
-  Type_inf.type_infer ex_parseoutput;;
+  Type_inf.type_infer ex_parseoutput;; *)
 
 
 
@@ -163,4 +163,5 @@ let closure_conv_main input =
   | _ -> ls in
   modifier middle;;
 
-    List.map (fun x -> print_string (Parser.ast2string x)) (closure_conv_main ex_parseoutput);;
+  (*
+    List.map (fun x -> print_string (Parser.ast2string x)) (closure_conv_main ex_parseoutput);;*)
