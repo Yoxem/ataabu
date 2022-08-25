@@ -123,13 +123,13 @@ let rec closure_conv_replacing fv line =
   let _ = List.map print_string fv in
   let tmp_list1 = List.map (fun var -> Parser.Item(Tokenizer.Token(var, "ID"))) fv in
   let fv_list = Parser.Ls(Parser.Item(Tokenizer.Token("%struct", "ID"))::tmp_list1) in
-  let closure_symbol = (genclosure ()) in
-  let def_closure_list = Parser.Ls([Parser.Item(Tokenizer.Token("%def", "ID"));
-                                    Parser.Item(Tokenizer.Token("STRUCT", "ID"));
-                                    Parser.Item(Tokenizer.Token(closure_symbol, "ID"));
-                                    fv_list]) in
   match line with
   | Parser.Ls([Parser.Item(Tokenizer.Token("lambda", "ID")); Parser.Ls(args); Parser.Ls(body)]) -> 
+    let closure_symbol = (genclosure ()) in
+    let def_closure_list = Parser.Ls([Parser.Item(Tokenizer.Token("%def", "ID"));
+                                      Parser.Item(Tokenizer.Token("STRUCT", "ID"));
+                                      Parser.Item(Tokenizer.Token(closure_symbol, "ID"));
+                                      fv_list]) in
     let replaced_body = List.map (fun l -> replacing_vars l fv closure_symbol) body in
     let temp = Parser.Ls([Parser.Item(Tokenizer.Token("Object*", "ID")); Parser.Item(Tokenizer.Token(closure_symbol,"ID"))]) in
     let replaced_lambda = Parser.Ls([Parser.Item(Tokenizer.Token("lambda", "ID")); Parser.Ls(args @ [temp]); Parser.Ls(replaced_body)]) in
@@ -138,7 +138,13 @@ let rec closure_conv_replacing fv line =
   | Parser.Ls([Parser.Item(Tokenizer.Token("%apply" , "ID")); caller; callee]) ->
     let caller_new = closure_conv_replacing fv caller in 
     let callee_new = closure_conv_replacing fv callee in 
-    Parser.Ls([Parser.Item(Tokenizer.Token("%apply" , "ID")); caller_new; callee_new])
+    (match caller_new with
+    | Parser.Ls([closure_struct; closure_main]) ->
+      (match callee_new with 
+      | Parser.Ls([callee_struct; callee_main]) -> Parser.Ls([closure_struct; callee_struct;
+        Parser.Ls([Parser.Item(Tokenizer.Token("%apply" , "ID")); closure_main; callee_main])])
+      | _ -> Parser.Ls([closure_struct;Parser.Ls([Parser.Item(Tokenizer.Token("%apply" , "ID")); closure_main; callee_new])]))
+    | _ -> line)
   | _ -> line
 
 

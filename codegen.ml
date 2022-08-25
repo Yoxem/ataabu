@@ -14,7 +14,7 @@ let gensym =
 let ex_token_list = Tokenizer.total_parser "lambda(x){x;}(12);";;
 Parser.print_parseoutput (Parser.stmts ex_token_list);;*)
 
-let ex_token_list2 = Tokenizer.total_parser "(lambda(int x){x + 2;}(20));";;
+let ex_token_list2 = Tokenizer.total_parser "lambda(int x){lambda(int y){x + y;};};";;
 let ex_parseoutput2 = Parser.stmts ex_token_list2;;
 
 let infering_result = Type_inf.type_infer ex_parseoutput2;; (*type infering*)
@@ -28,7 +28,7 @@ print_string (Parser.ast2string ex_parseoutput3);;
 
 let list_mut = ref (Parser.Ls([]));;
 let main_str = ref "";;
-let lambda_counter = ref 1;;
+let closure_counter = ref (-1);;
 
 let get_args_sym_string x =
   match x with
@@ -45,7 +45,7 @@ let rec codegen ast_tree main_str =
 
 and codegen_aux ast_tree main_str= 
   match ast_tree with
-  | Parser.Ls([Parser.Item(Tokenizer.Token("%apply", "ID")); caller; callee ]) ->
+  | Parser.Ls([Parser.Item(Tokenizer.Token("%apply", "ID")); caller; callee]) ->
     let caller_side = codegen_aux caller main_str in 
     let callee_side = codegen_aux callee main_str in
     let res_sym = gensym () in
@@ -67,8 +67,7 @@ and codegen_aux ast_tree main_str=
       main_str := !(main_str) ^ item_str;
       sym
   | Parser.Ls([Parser.Item(Tokenizer.Token("lambda", "ID")); Parser.Ls(args_id::args); body ]) ->
-    let current_lambda_counter = !lambda_counter in
-    let _ = lambda_counter := !lambda_counter + 1 in
+
     let args_str_array = List.map get_args_sym_string args in
     let arg_str = List.hd args_str_array in
     let function_str = ref "" in
@@ -95,7 +94,7 @@ and codegen_aux ast_tree main_str=
     %s.value.func = &%s;
     %s.free_var = clos%d ;
     " in
-    let item_str = Printf.sprintf closure_str_fmt item_str_tmp sym_closure sym_closure sym_closure sym_lambda sym_closure current_lambda_counter in
+    let item_str = Printf.sprintf closure_str_fmt item_str_tmp sym_closure sym_closure sym_closure sym_lambda sym_closure (!closure_counter) in
     main_str := !(main_str) ^ item_str ;
     sym_closure
 
@@ -130,6 +129,7 @@ and codegen_aux ast_tree main_str=
     Object %s[] = %s;\n\n" in 
     let item_str = (Printf.sprintf fmt clo_fv result_rhs) in
     let _ = (main_str := !(main_str) ^ item_str ) in
+    let _ = closure_counter := !closure_counter + 1 in
       ""
     | Parser.Ls([Parser.Item(Tokenizer.Token("%def", "ID")); typ; Parser.Item(Tokenizer.Token(lhs, "ID")); y]) ->
       let rhs = codegen_aux y main_str in
