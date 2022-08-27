@@ -78,14 +78,14 @@ let rec find_free_var l bound_vars =
 
   Type_inf.type_infer ex_parseoutput;; *)
 
-
+let closure_sym_no = ref 0;;
 
 let genclosure =
-  let x = ref 0 in 
     fun () ->
-    let tmp = Printf.sprintf "clos%d" (!x) in
-    let _ = (x := !x + 1) in
+    let tmp = Printf.sprintf "clos%d" (!closure_sym_no) in
+    let _ = (closure_sym_no := !closure_sym_no + 1) in
     tmp;;
+
   
 (* Parser.print_parseoutput ex_parseoutput;; *)
 
@@ -103,6 +103,10 @@ let get_index ls item =
 
   let rec replacing_vars ln fv clos_sym =
     match ln with
+    | Parser.Ls([Parser.Item(Tokenizer.Token("lambda", "ID"));args; body]) ->
+      let body_replaced = replacing_vars body fv clos_sym in 
+      let args_replaced = replacing_vars args fv clos_sym in
+      Parser.Ls([Parser.Item(Tokenizer.Token("lambda", "ID"));args_replaced; body_replaced])
     | Parser.Ls([Parser.Ls(list)]) ->  replacing_vars (Parser.Ls(list)) fv clos_sym
     | Parser.Ls(list) -> Parser.Ls(List.map (fun x -> replacing_vars x fv clos_sym) list)
     | Parser.Item(Tokenizer.Token(id, typ)) ->
@@ -119,25 +123,36 @@ let get_index ls item =
 
 
 
-let rec closure_conv_replacing fv line = 
-  let _ = List.map print_string fv in
-  let tmp_list1 = List.map (fun var -> Parser.Item(Tokenizer.Token(var, "ID"))) fv in
+let rec closure_conv_replacing fv_outer fv_inner line = 
+
+
+  let _ = print_string ("===" ^ (Parser.ast2string line) ^ "========") in
+  let _ = print_string "fv_inner: " in
+  let _ = List.map print_string fv_inner in
+  let _ = print_string "\tfv_outer: " in
+  let _ = List.map print_string fv_outer in
+
+  let tmp_list1 = List.map (fun var -> Parser.Item(Tokenizer.Token(var, "ID"))) fv_inner in
   let fv_list = Parser.Ls(Parser.Item(Tokenizer.Token("%struct", "ID"))::tmp_list1) in
   match line with
   | Parser.Ls([Parser.Item(Tokenizer.Token("lambda", "ID")); Parser.Ls(args); Parser.Ls(body)]) -> 
+    let new_fv = (find_free_var (Parser.Ls(body)) (ref [])) in
+    let _ = print_string "new_fv: " in
+    let _ = List.map print_string new_fv in
+    let _ = print_string "\n\n" in
     let closure_symbol = (genclosure ()) in
     let def_closure_list = Parser.Ls([Parser.Item(Tokenizer.Token("%def", "ID"));
                                       Parser.Item(Tokenizer.Token("STRUCT", "ID"));
                                       Parser.Item(Tokenizer.Token(closure_symbol, "ID"));
                                       fv_list]) in
-    let replaced_body = List.map (fun l -> replacing_vars l fv closure_symbol) body in
+    let replaced_body = List.map (fun l -> closure_conv_replacing fv_inner new_fv l) body in
     let temp = Parser.Ls([Parser.Item(Tokenizer.Token("Object*", "ID")); Parser.Item(Tokenizer.Token(closure_symbol,"ID"))]) in
     let replaced_lambda = Parser.Ls([Parser.Item(Tokenizer.Token("lambda", "ID")); Parser.Ls(args @ [temp]); Parser.Ls(replaced_body)]) in
     let return_result =  Parser.Ls([def_closure_list; replaced_lambda]) in
     return_result
   | Parser.Ls([Parser.Item(Tokenizer.Token("%apply" , "ID")); caller; callee]) ->
-    let caller_new = closure_conv_replacing fv caller in 
-    let callee_new = closure_conv_replacing fv callee in 
+    let caller_new = closure_conv_replacing fv_outer fv_inner caller in 
+    let callee_new = closure_conv_replacing fv_outer fv_inner callee in 
     (match caller_new with
     | Parser.Ls([closure_struct; closure_main]) ->
       (match callee_new with 
@@ -145,7 +160,7 @@ let rec closure_conv_replacing fv line =
         Parser.Ls([Parser.Item(Tokenizer.Token("%apply" , "ID")); closure_main; callee_main])])
       | _ -> Parser.Ls([closure_struct;Parser.Ls([Parser.Item(Tokenizer.Token("%apply" , "ID")); closure_main; callee_new])]))
     | _ -> line)
-  | _ -> line
+  | _ -> replacing_vars line fv_outer (!closure_sym_no)
 
 
 
@@ -156,18 +171,28 @@ let rec closure_conv_replacing fv line =
       | Parser.Success(Ls(lines), remained_tokens) ->
         (let free_var = ref [] in
         List.map (fun ln -> let fv = find_free_var ln free_var in
-                            closure_conv_replacing fv ln) lines)
+                            closure_conv_replacing [] fv ln) lines)
       | _ -> []);;
 
+let rec elim_paren_aux middle1 =
+  match middle1 with
+  | Parser.Ls([Parser.Ls(x)]) -> elim_paren_aux (Parser.Ls(x))
+  | Parser.Ls(x) -> Parser.Ls(List.map elim_paren_aux x)
+  | _ -> middle1 
+      ;;
+
+let elim_paren middle1 = List.map elim_paren_aux middle1;;
+
 let closure_conv_main input =
-  let middle = closure_conv_aux2 input in
+  let middle1 = closure_conv_aux2 input in
+  let middle2 = elim_paren middle1 in
   let rec modifier ls  =
   match ls with
   | Parser.Ls([Parser.Ls(Parser.Item(Tokenizer.Token("%def", "ID"))::Parser.Item(Tokenizer.Token("STRUCT", "ID"))::rs1 ); rs2 ])::rs3 ->
     Parser.Ls(Parser.Item(Tokenizer.Token("%def", "ID"))::Parser.Item(Tokenizer.Token("STRUCT", "ID"))::rs1)::rs2::rs3
   | hd::rs ->hd::(modifier rs)
   | _ -> ls in
-  modifier middle;;
+  modifier middle2;;
 
   (*
     List.map (fun x -> print_string (Parser.ast2string x)) (closure_conv_main ex_parseoutput);;*)

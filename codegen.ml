@@ -14,7 +14,7 @@ let gensym =
 let ex_token_list = Tokenizer.total_parser "lambda(x){x;}(12);";;
 Parser.print_parseoutput (Parser.stmts ex_token_list);;*)
 
-let ex_token_list2 = Tokenizer.total_parser "lambda(int x){lambda(int y){x + y;};};";;
+let ex_token_list2 = Tokenizer.total_parser "((lambda(int x){lambda(int y){x + y;};}(7))(8));";;
 let ex_parseoutput2 = Parser.stmts ex_token_list2;;
 
 let infering_result = Type_inf.type_infer ex_parseoutput2;; (*type infering*)
@@ -39,6 +39,8 @@ let get_args_sym_string x =
 
 let rec codegen ast_tree main_str =
   match ast_tree with
+  | Parser.Ls([Parser.Item(Tokenizer.Token(op, "OP")); x; y]) -> let a = codegen_aux ast_tree main_str in (!main_str, a)
+  | Parser.Ls([Parser.Item(Tokenizer.Token("%apply", "ID")); x; y]) -> let a = codegen_aux ast_tree main_str in (!main_str, a)
   | Parser.Ls(ls_inner) -> let a = (List.map (fun x ->  codegen_aux x main_str) ls_inner) in (!main_str, (List.hd (List.rev a)))
   | Parser.Item(x) -> let a =  codegen_aux ast_tree main_str in (a, a)
   | Parser.ASTFail -> ("", "")
@@ -67,7 +69,7 @@ and codegen_aux ast_tree main_str=
       main_str := !(main_str) ^ item_str;
       sym
   | Parser.Ls([Parser.Item(Tokenizer.Token("lambda", "ID")); Parser.Ls(args_id::args); body ]) ->
-
+    let closure_con  = !closure_counter in
     let args_str_array = List.map get_args_sym_string args in
     let arg_str = List.hd args_str_array in
     let function_str = ref "" in
@@ -86,6 +88,7 @@ and codegen_aux ast_tree main_str=
     let item_str_tmp = Printf.sprintf fmt sym_lambda arg_str body_string return_str in
 
     let closure_str_fmt  = format_of_string
+
     "
     %s
 
@@ -94,7 +97,7 @@ and codegen_aux ast_tree main_str=
     %s.value.func = &%s;
     %s.free_var = clos%d ;
     " in
-    let item_str = Printf.sprintf closure_str_fmt item_str_tmp sym_closure sym_closure sym_closure sym_lambda sym_closure (!closure_counter) in
+    let item_str = Printf.sprintf closure_str_fmt item_str_tmp sym_closure sym_closure sym_closure sym_lambda sym_closure closure_con in
     main_str := !(main_str) ^ item_str ;
     sym_closure
 
